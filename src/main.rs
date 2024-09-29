@@ -1,8 +1,5 @@
 #![feature(allocator_api, get_mut_unchecked)]
 
-extern crate glium;
-// extern crate winit;
-
 mod crash;
 mod gui;
 

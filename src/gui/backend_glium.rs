@@ -8,6 +8,8 @@ use crate::crash;
 use glium::winit;
 use glium::Surface; // OpenGL interface
 
+mod winit_lifecycle;
+
 // Shorthand
 type WindowDisplay = glium::Display<glium::glutin::surface::WindowSurface>;
 
@@ -16,54 +18,30 @@ type WindowDisplay = glium::Display<glium::glutin::surface::WindowSurface>;
 /// Only one object of this type should normally be instantiated, as it owns most of Glium
 /// resources.
 ///
-/// All interactions with Gui objects msut happen in main application thread.
+/// All interactions with Gui objects must happen in main application thread.
 pub struct Gui {
-    program_3d: glium::Program,
-    display: WindowDisplay,
-    window: winit::window::Window,
+    /// The number of the frame that most recently started rendering.
+    ///
+    /// The counter is `0` before first frame, then it is incremented by one before invoking user
+    /// code during each frame render.
     last_started_frame: u64,
+
+    /// The moment this struct was constructed.
     start_time: std::time::Instant,
+
+    /// OpenGL program for 3D visuals with lighting support.
+    program_3d: glium::Program,
+
+    /// The [`glium::Display`] instance of the main window that may be used for OpenGL operations.
+    display: WindowDisplay,
+
+    /// The main window.
+    ///
+    /// Implementation note: this must be the last field to prevent deadlocks on drop.
+    window: winit::window::Window,
 }
 
-/// Initializes the GUI, runs GUI main loop and shuts it down when exiting.
-///
-/// Due to the requirements of various underlying OS libraries, this function must be called in the
-/// application main thread. It only returns after an exit is requested, and after GUI has shut
-/// down.
-///
-/// In order to respond to user input, a super::Application object must be provided via
-/// `initializer`. This object should directly or indirectly own all GUI-related resources.
-///
-/// A single super::Gui instance is created and later dropped by this function. It is only available
-/// while this function runs, and it is only available in the thread of this function.
-///
-/// The exact order of events is as follows:
-///   1. GUI initialization happens: window and OpenGL context are created.
-///   2. `initializer` is executed. User logic may instantiate necessary resources, but blocking
-///      operations should be deferred until the main loop to prevent UI freezes.
-///   3. Main loop executes until an exit is requested. The object returned by `initializer`
-///      receives events.
-///   4. The object returned by `initializer` is dropped. User logic may release necessary
-///      resources. Blocking operations should happen before GUI exits to prevent UI freezes.
-///   5. GUI shuts down.
-///   6. This function returns.
-pub fn run<I, A>(initializer: I)
-where
-    I: FnOnce(&mut super::Gui) -> A,
-    A: super::Application,
-{
-    // Perform GUI initialization
-    let (mut gui, event_loop) = Gui::new();
-
-    // Perform user logic initialization
-    let mut application = initializer(&mut gui);
-
-    // Hand control over to the GUI. This call exits only when the game is shutting down
-    gui.0.run_main_loop(event_loop, &mut application);
-
-    // drop(application): Perform user logic shutdown
-    // drop(gui): Perform GUI shutdown
-}
+pub use winit_lifecycle::run;
 
 impl Gui {
     /// Performs initialization of the basic GUI resources required to implement super::Gui methods.
@@ -72,14 +50,10 @@ impl Gui {
     ///
     /// Returned values include the constructed Gui instance and an winit event loop object.
     /// The latter must be forwarded to Gui::run_main_loop as a requirement of Glium library.
-    fn new() -> (super::Gui, winit::event_loop::EventLoop<()>) {
-        let event_loop = winit::event_loop::EventLoopBuilder::new()
-            .build()
-            .expect("Could not create winit event loop");
-
+    fn new(event_loop: &winit::event_loop::ActiveEventLoop) -> super::Gui {
         let (window, display) = glium::backend::glutin::SimpleWindowBuilder::new()
             .with_title("Trapiron")
-            .build(&event_loop);
+            .build(event_loop);
 
         let program_3d = glium::Program::from_source(
             &display,
@@ -89,31 +63,13 @@ impl Gui {
         )
         .expect("Could not create GLSL shared program");
 
-        (
-            super::Gui(Self {
-                program_3d,
-                display,
-                window,
-                last_started_frame: 0,
-                start_time: std::time::Instant::now(),
-            }),
-            event_loop,
-        )
-    }
-
-    /// Executes the main loop of GUI until an exit is requested.
-    ///
-    /// `event_loop` must be the object returned by Gui::new.
-    fn run_main_loop(
-        &mut self,
-        event_loop: winit::event_loop::EventLoop<()>,
-        app: &mut impl super::Application,
-    ) {
-        let _ = event_loop.run(move |event, ael| {
-            crash::with_context(("Current winit (GUI) event", || &event), || {
-                self.handle_event(app, &event, &ael);
-            });
-        });
+        super::Gui(Self {
+            last_started_frame: 0,
+            start_time: std::time::Instant::now(),
+            program_3d,
+            display,
+            window,
+        })
     }
 
     /// Processes a single Glium event.
@@ -123,23 +79,19 @@ impl Gui {
     fn handle_event(
         &mut self,
         app: &mut impl super::Application,
-        event: &winit::event::Event<()>,
-        ael: &winit::event_loop::ActiveEventLoop,
+        event: &winit::event::WindowEvent,
+        event_loop: &winit::event_loop::ActiveEventLoop,
     ) {
+        use winit::event::WindowEvent::*;
+
         match &event {
-            winit::event::Event::WindowEvent { event, .. } => match event {
-                winit::event::WindowEvent::CloseRequested => ael.exit(),
+            CloseRequested => event_loop.exit(),
 
-                winit::event::WindowEvent::Resized(window_size) => {
-                    self.display.resize((*window_size).into());
-                }
+            Resized(window_size) => {
+                self.display.resize((*window_size).into());
+            }
 
-                winit::event::WindowEvent::RedrawRequested => self.process_frame(app),
-
-                _ => (),
-            },
-
-            winit::event::Event::AboutToWait => self.window.request_redraw(),
+            RedrawRequested => self.process_frame(app),
 
             _ => (),
         };

@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-glium = "0.35"
-#winit = "0.29"
+# glium = "0.35"
+glium = { git = "https://github.com/OLEGSHA/glium.git", branch = "master" }
