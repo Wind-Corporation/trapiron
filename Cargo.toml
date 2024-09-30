@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 # glium = "0.35"
 glium = { git = "https://github.com/OLEGSHA/glium.git", branch = "master" }
+image = { version = "0.25.2", default-features = false, features = ["png"] }
+include_dir = { version = "0.7.4", default-features = false }

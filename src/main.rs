@@ -10,6 +10,9 @@ struct MyApplication {
 impl MyApplication {
     fn new(gui: &mut gui::Gui) -> Self {
         println!("My init!");
+
+        gui::asset::load_image("test");
+
         Self {
             triangle: gui.make_primitive(
                 &[
