@@ -1,4 +1,4 @@
-#![feature(allocator_api, get_mut_unchecked)]
+#![feature(get_mut_unchecked)]
 
 mod crash;
 mod gui;
