@@ -22,9 +22,17 @@ pub mod asset;
 ///
 /// ## See also
 /// backend::run
-pub struct Gui(backend::Gui);
+pub struct Gui {
+    /// The implementation provided by the backend.
+    backend: backend::Gui,
+}
 
-impl Gui {}
+impl Gui {
+    /// Wraps the provided backend implementation of Gui with the public-facing type.
+    fn from(backend: backend::Gui) -> Self {
+        Self { backend }
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Drawing basics
@@ -158,7 +166,7 @@ impl Gui {
         vertices: &[Vertex3],
         indices: &[Index],
     ) -> Result<Primitive3, PrimitiveError> {
-        self.0.make_primitive3(vertices, indices)
+        self.backend.make_primitive3(vertices, indices)
     }
 
     /// Creates a new [2D graphics primitive](Primitive2) from raw components.
@@ -167,6 +175,6 @@ impl Gui {
         vertices: &[Vertex2],
         indices: &[Index],
     ) -> Result<Primitive2, PrimitiveError> {
-        self.0.make_primitive2(vertices, indices)
+        self.backend.make_primitive2(vertices, indices)
     }
 }

@@ -63,7 +63,7 @@ impl Gui {
         )
         .expect("Could not create GLSL shared program");
 
-        super::Gui(Self {
+        super::Gui::from(Self {
             last_started_frame: 0,
             start_time: std::time::Instant::now(),
             program_3d,
