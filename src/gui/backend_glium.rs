@@ -3,8 +3,8 @@
 //! Do not use path `gui::backend_glium` unless writing code that speicifically requires this
 //! backend. Use `gui::*` wrappers, or use `gui::backend` when implementing these wrappers.
 
+use super::{Index, Vertex2, Vertex3};
 use crate::crash;
-
 use glium::winit;
 use glium::Surface; // OpenGL interface
 
@@ -129,12 +129,18 @@ pub struct DrawContext<'a> {
     now: std::time::Duration,
 }
 
-use super::Vertex3;
-glium::implement_vertex!(Vertex3, position, color_multiplier);
+glium::implement_vertex!(Vertex3, position, color_multiplier, uv);
+
+glium::implement_vertex!(Vertex2, position, color_multiplier, uv);
 
 pub struct Primitive3 {
-    vertices: glium::VertexBuffer<super::Vertex3>,
-    indices: glium::IndexBuffer<super::Index>,
+    vertices: glium::VertexBuffer<Vertex3>,
+    indices: glium::IndexBuffer<Index>,
+}
+
+pub struct Primitive2 {
+    vertices: glium::VertexBuffer<Vertex2>,
+    indices: glium::IndexBuffer<Index>,
 }
 
 impl super::Drawable for Primitive3 {
@@ -164,12 +170,20 @@ impl super::Drawable for Primitive3 {
     }
 }
 
+impl super::Drawable for Primitive2 {
+    fn draw(&mut self, _ctxt: &mut super::DrawContext) {
+        unimplemented!();
+    }
+}
+
 impl Gui {
-    pub fn make_primitive(
+    pub fn make_primitive3(
         &mut self,
-        vertices: &[super::Vertex3],
-        indices: &[super::Index],
-    ) -> super::Primitive3 {
+        vertices: &[Vertex3],
+        indices: &[Index],
+    ) -> Result<super::Primitive3, super::PrimitiveError> {
+        // TODO Check validity of indices and length of vertices
+
         let vertices = glium::VertexBuffer::new(&self.display, vertices)
             .expect("Could not create a vertex buffer");
 
@@ -180,6 +194,26 @@ impl Gui {
         )
         .expect("Could not create an index buffer");
 
-        super::Primitive3(Primitive3 { vertices, indices })
+        Ok(super::Primitive3(Primitive3 { vertices, indices }))
+    }
+
+    pub fn make_primitive2(
+        &mut self,
+        vertices: &[Vertex2],
+        indices: &[Index],
+    ) -> Result<super::Primitive2, super::PrimitiveError> {
+        // TODO Check validity of indices and length of vertices
+
+        let vertices = glium::VertexBuffer::new(&self.display, vertices)
+            .expect("Could not create a vertex buffer");
+
+        let indices = glium::IndexBuffer::new(
+            &self.display,
+            glium::index::PrimitiveType::TrianglesList,
+            indices,
+        )
+        .expect("Could not create an index buffer");
+
+        Ok(super::Primitive2(Primitive2 { vertices, indices }))
     }
 }

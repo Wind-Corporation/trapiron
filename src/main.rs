@@ -14,26 +14,28 @@ impl MyApplication {
         gui::asset::load_image("test");
 
         Self {
-            triangle: gui.make_primitive(
-                &[
-                    gui::Vertex3 {
-                        position: [0.5, 0.5, 0.0],
-                        color_multiplier: [0.0, 1.0, 1.0],
-                        uv: [0.0, 0.0],
-                    },
-                    gui::Vertex3 {
-                        position: [-0.5, 0.5, 0.0],
-                        color_multiplier: [1.0, 0.0, 1.0],
-                        uv: [0.0, 0.0],
-                    },
-                    gui::Vertex3 {
-                        position: [0.0, -0.5, 0.0],
-                        color_multiplier: [1.0, 1.0, 0.0],
-                        uv: [0.0, 0.0],
-                    },
-                ],
-                &[0, 1, 2],
-            ),
+            triangle: gui
+                .make_primitive3(
+                    &[
+                        gui::Vertex3 {
+                            position: [0.5, 0.5, 0.0],
+                            color_multiplier: [0.0, 1.0, 1.0],
+                            uv: [0.0, 0.0],
+                        },
+                        gui::Vertex3 {
+                            position: [-0.5, 0.5, 0.0],
+                            color_multiplier: [1.0, 0.0, 1.0],
+                            uv: [0.0, 0.0],
+                        },
+                        gui::Vertex3 {
+                            position: [0.0, -0.5, 0.0],
+                            color_multiplier: [1.0, 1.0, 0.0],
+                            uv: [0.0, 0.0],
+                        },
+                    ],
+                    &[0, 1, 2],
+                )
+                .expect("Could not make a triangle"),
         }
     }
 }
