@@ -1,5 +1,8 @@
 //! Interface to the GUI backend.
 
+use std::collections::HashMap;
+use std::rc::{Rc, Weak};
+
 pub mod backend_glium;
 
 // To change the active backend, edit this line.
@@ -25,12 +28,23 @@ pub mod asset;
 pub struct Gui {
     /// The implementation provided by the backend.
     backend: backend::Gui,
+
+    /// All textures that have ever been created, keyed by texture name. Empty values should be
+    /// treated as if they did not exist.
+    ///
+    /// Note that a [`Texture`] may become unreferenced, which will cause it to drop. This leaves an
+    /// empty [`Weak`] in the map. Empty `Weak`s remain until the texture is re-created or until
+    /// shutdown.
+    texture_registry: HashMap<TextureId, Weak<Texture>>,
 }
 
 impl Gui {
     /// Wraps the provided backend implementation of Gui with the public-facing type.
     fn from(backend: backend::Gui) -> Self {
-        Self { backend }
+        Self {
+            backend,
+            texture_registry: HashMap::new(),
+        }
     }
 }
 
@@ -122,7 +136,7 @@ pub struct Vertex2 {
 /// The simplest 3D object that can be drawn to the screen directly.
 ///
 /// A Primitive3 is a collection of vertices, connected into triangles according to an vertex index
-/// list, that has a texture associated with it.
+/// list, that has a set of textures associated with it.
 pub struct Primitive3(backend::Primitive3);
 
 impl Drawable for Primitive3 {
@@ -134,7 +148,7 @@ impl Drawable for Primitive3 {
 /// The simplest 2D object that can be drawn to the screen directly.
 ///
 /// A Primitive2 is a collection of vertices, connected into triangles according to an vertex index
-/// list, that has a texture associated with it.
+/// list, that has a set textures associated with it.
 pub struct Primitive2(backend::Primitive2);
 
 impl Drawable for Primitive2 {
@@ -176,5 +190,66 @@ impl Gui {
         indices: &[Index],
     ) -> Result<Primitive2, PrimitiveError> {
         self.backend.make_primitive2(vertices, indices)
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Textures
+//
+
+/// A texture - an image that may be bound to geometry and drawn to the screen.
+pub struct Texture(backend::Texture);
+
+/// Texture group with options for texture loading.
+///
+/// It is expected that groups are `const` values, though this is not a hard requirement.
+#[derive(Hash, PartialEq, Eq)]
+pub struct TextureGroup {
+    // Empty; will be expanded later
+}
+
+impl TextureGroup {
+    /// Derives a [`TextureId`] that belongs to this group.
+    pub fn id(&'static self, name: &'static str) -> TextureId {
+        TextureId { name, group: self }
+    }
+}
+
+/// The identifier of a [`Texture`] for loading.
+///
+/// The name is expected to be a string literal, and the group is expected to be a `const` value,
+/// though these are not hard requirements.
+///
+/// Equally-named textures in different groups are considered different textures and are loaded
+/// twice.
+#[derive(Clone, Hash, PartialEq, Eq)]
+pub struct TextureId {
+    /// The name of the texture.
+    ///
+    /// The texture will be loaded from `asset/gui/texture/{name}.png`.
+    name: &'static str,
+
+    /// The group that the texture belongs in.
+    ///
+    /// Texture group defines various options related to the texture.
+    group: &'static TextureGroup,
+}
+
+impl Gui {
+    /// Obtains a reference to a texture by its [id](TextureId), loading it if necessary.
+    ///
+    /// The method panics if the texture could not be loaded. Texture loading may occur more than
+    /// once during program runtime.
+    pub fn texture(&mut self, id: TextureId) -> Rc<Texture> {
+        if let Some(ref mut weak) = self.texture_registry.get(&id) {
+            if let Some(texture) = weak.upgrade() {
+                return texture;
+            }
+        }
+
+        let image = asset::load_image(id.name);
+        let texture = Rc::new(self.backend.make_texture(image, &id));
+        self.texture_registry.insert(id, Rc::downgrade(&texture));
+        texture
     }
 }

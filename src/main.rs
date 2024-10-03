@@ -7,11 +7,13 @@ struct MyApplication {
     triangle: gui::Primitive3,
 }
 
+const BLOCK_TEXTURES: gui::TextureGroup = gui::TextureGroup {};
+
 impl MyApplication {
     fn new(gui: &mut gui::Gui) -> Self {
         println!("My init!");
 
-        gui::asset::load_image("test");
+        let texture = gui.texture(BLOCK_TEXTURES.id("test"));
 
         Self {
             triangle: gui

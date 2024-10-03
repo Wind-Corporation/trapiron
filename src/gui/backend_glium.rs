@@ -217,3 +217,15 @@ impl Gui {
         Ok(super::Primitive2(Primitive2 { vertices, indices }))
     }
 }
+
+pub struct Texture;
+
+impl Gui {
+    pub fn make_texture(
+        &mut self,
+        image: image::DynamicImage,
+        id: &super::TextureId,
+    ) -> super::Texture {
+        unimplemented!()
+    }
+}
