@@ -247,9 +247,12 @@ impl Gui {
             }
         }
 
-        let image = asset::load_image(id.name);
-        let texture = Rc::new(self.backend.make_texture(image, &id));
-        self.texture_registry.insert(id, Rc::downgrade(&texture));
-        texture
+        let name = id.name;
+        crate::crash::with_context(("Loading texture", || name), || {
+            let image = asset::load_image(id.name);
+            let texture = Rc::new(self.backend.make_texture(image, &id));
+            self.texture_registry.insert(id, Rc::downgrade(&texture));
+            texture
+        })
     }
 }

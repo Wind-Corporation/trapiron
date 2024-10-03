@@ -13,7 +13,7 @@ impl MyApplication {
     fn new(gui: &mut gui::Gui) -> Self {
         println!("My init!");
 
-        let texture = gui.texture(BLOCK_TEXTURES.id("test"));
+        let _texture = gui.texture(BLOCK_TEXTURES.id("test"));
 
         Self {
             triangle: gui

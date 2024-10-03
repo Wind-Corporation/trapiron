@@ -218,14 +218,21 @@ impl Gui {
     }
 }
 
-pub struct Texture;
+pub type Texture = glium::texture::Texture2d;
 
 impl Gui {
     pub fn make_texture(
         &mut self,
         image: image::DynamicImage,
-        id: &super::TextureId,
+        _id: &super::TextureId,
     ) -> super::Texture {
-        unimplemented!()
+        use glium::texture::{MipmapsOption, RawImage2d, Texture2d};
+
+        let image = image.to_rgba8();
+        let image_dimensions = image.dimensions();
+        let image = RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        let texture = Texture2d::with_mipmaps(&self.display, image, MipmapsOption::NoMipmap)
+            .expect("Could not upload texture to GPU");
+        super::Texture(texture)
     }
 }
