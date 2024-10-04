@@ -13,29 +13,35 @@ impl MyApplication {
     fn new(gui: &mut gui::Gui) -> Self {
         println!("My init!");
 
-        let _texture = gui.texture(BLOCK_TEXTURES.id("test"));
+        let texture = gui.texture(BLOCK_TEXTURES.id("test"));
 
         Self {
             triangle: gui
                 .make_primitive3(
                     &[
                         gui::Vertex3 {
-                            position: [0.5, 0.5, 0.0],
-                            color_multiplier: [0.0, 1.0, 1.0],
-                            uv: [0.0, 0.0],
-                        },
-                        gui::Vertex3 {
                             position: [-0.5, 0.5, 0.0],
-                            color_multiplier: [1.0, 0.0, 1.0],
-                            uv: [0.0, 0.0],
+                            color_multiplier: [1.0, 1.0, 1.0],
+                            texture_coords: [0.0, 1.0],
                         },
                         gui::Vertex3 {
-                            position: [0.0, -0.5, 0.0],
-                            color_multiplier: [1.0, 1.0, 0.0],
-                            uv: [0.0, 0.0],
+                            position: [-0.5, -0.5, 0.0],
+                            color_multiplier: [1.0, 1.0, 1.0],
+                            texture_coords: [0.0, 0.0],
+                        },
+                        gui::Vertex3 {
+                            position: [0.5, 0.5, 0.0],
+                            color_multiplier: [1.0, 1.0, 1.0],
+                            texture_coords: [1.0, 1.0],
+                        },
+                        gui::Vertex3 {
+                            position: [0.5, -0.5, 0.0],
+                            color_multiplier: [1.0, 1.0, 1.0],
+                            texture_coords: [1.0, 0.0],
                         },
                     ],
-                    &[0, 1, 2],
+                    &[0, 1, 2, 3, 2, 1],
+                    texture,
                 )
                 .expect("Could not make a triangle"),
         }

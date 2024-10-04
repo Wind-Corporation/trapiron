@@ -109,7 +109,7 @@ pub struct Vertex3 {
     /// The coordinates in texture space associated with this vertex (the UV-mapping of the vertex).
     ///
     /// This value is ignored when no texture is used.
-    pub uv: [Float; 2],
+    pub texture_coords: [Float; 2],
 }
 
 /// A vertex of a 2D [`Primitive2`].
@@ -130,7 +130,7 @@ pub struct Vertex2 {
     /// The coordinates in texture space associated with this vertex (the UV-mapping of the vertex).
     ///
     /// This value is ignored when no texture is used.
-    pub uv: [Float; 2],
+    pub texture_coords: [Float; 2],
 }
 
 /// The simplest 3D object that can be drawn to the screen directly.
@@ -179,8 +179,9 @@ impl Gui {
         &mut self,
         vertices: &[Vertex3],
         indices: &[Index],
+        texture: Rc<Texture>,
     ) -> Result<Primitive3, PrimitiveError> {
-        self.backend.make_primitive3(vertices, indices)
+        self.backend.make_primitive3(vertices, indices, texture)
     }
 
     /// Creates a new [2D graphics primitive](Primitive2) from raw components.
@@ -188,8 +189,9 @@ impl Gui {
         &mut self,
         vertices: &[Vertex2],
         indices: &[Index],
+        texture: Rc<Texture>,
     ) -> Result<Primitive2, PrimitiveError> {
-        self.backend.make_primitive2(vertices, indices)
+        self.backend.make_primitive2(vertices, indices, texture)
     }
 }
 
