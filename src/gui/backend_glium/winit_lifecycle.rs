@@ -150,18 +150,18 @@ where
             return;
         };
 
-        if gui.0.window.id() != window_id {
+        if gui.backend.window.id() != window_id {
             return;
         }
 
         crate::crash::with_context(("Current winit (GUI) event", || &event), || {
-            gui.0.handle_event(user_app, &event, event_loop);
+            gui.backend.handle_event(user_app, &event, event_loop);
         });
     }
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {
         if let ApplicationState::Running { ref gui, .. } = self.state {
-            gui.0.window.request_redraw();
+            gui.backend.window.request_redraw();
         }
     }
 }

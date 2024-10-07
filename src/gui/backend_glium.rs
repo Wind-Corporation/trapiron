@@ -7,6 +7,7 @@ use super::{Index, Vertex2, Vertex3};
 use crate::crash;
 use glium::winit;
 use glium::Surface; // OpenGL interface
+use std::rc::Rc;
 
 mod winit_lifecycle;
 
@@ -63,7 +64,7 @@ impl Gui {
         )
         .expect("Could not create GLSL shared program");
 
-        super::Gui(Self {
+        super::Gui::from(Self {
             last_started_frame: 0,
             start_time: std::time::Instant::now(),
             program_3d,
@@ -129,18 +130,20 @@ pub struct DrawContext<'a> {
     now: std::time::Duration,
 }
 
-glium::implement_vertex!(Vertex3, position, color_multiplier, uv);
+glium::implement_vertex!(Vertex3, position, color_multiplier, texture_coords);
 
-glium::implement_vertex!(Vertex2, position, color_multiplier, uv);
+glium::implement_vertex!(Vertex2, position, color_multiplier, texture_coords);
 
 pub struct Primitive3 {
     vertices: glium::VertexBuffer<Vertex3>,
     indices: glium::IndexBuffer<Index>,
+    texture: Rc<super::Texture>,
 }
 
 pub struct Primitive2 {
     vertices: glium::VertexBuffer<Vertex2>,
     indices: glium::IndexBuffer<Index>,
+    texture: Rc<super::Texture>,
 }
 
 impl super::Drawable for Primitive3 {
@@ -150,20 +153,31 @@ impl super::Drawable for Primitive3 {
         let y = (t * 1.3).sin();
         let s = (t * 2.3).sin() * 0.3 + 0.7;
 
+        let matrix = [
+            [s, 0.0, 0.0, 0.0],
+            [0.0, s, 0.0, 0.0],
+            [0.0, 0.0, s, 0.0],
+            [x * 0.5, y * 0.5, 0.0, 1.0],
+        ];
+        let sampler = self
+            .texture
+            .0
+            .sampled()
+            .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest)
+            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
+
+        let uniforms = glium::uniform! {
+            world_transform: matrix,
+            tex: sampler,
+        };
+
         ctxt.0
             .target
             .draw(
                 &self.vertices,
                 &self.indices,
                 &ctxt.0.gui.program_3d,
-                &glium::uniform! {
-                    world_transform: [
-                        [s, 0.0, 0.0, 0.0],
-                        [0.0, s, 0.0, 0.0],
-                        [0.0, 0.0, s, 0.0],
-                        [x * 0.5, y * 0.5, 0.0, 1.0]
-                    ],
-                },
+                &uniforms,
                 &Default::default(),
             )
             .unwrap();
@@ -181,6 +195,7 @@ impl Gui {
         &mut self,
         vertices: &[Vertex3],
         indices: &[Index],
+        texture: Rc<super::Texture>,
     ) -> Result<super::Primitive3, super::PrimitiveError> {
         // TODO Check validity of indices and length of vertices
 
@@ -194,13 +209,18 @@ impl Gui {
         )
         .expect("Could not create an index buffer");
 
-        Ok(super::Primitive3(Primitive3 { vertices, indices }))
+        Ok(super::Primitive3(Primitive3 {
+            vertices,
+            indices,
+            texture,
+        }))
     }
 
     pub fn make_primitive2(
         &mut self,
         vertices: &[Vertex2],
         indices: &[Index],
+        texture: Rc<super::Texture>,
     ) -> Result<super::Primitive2, super::PrimitiveError> {
         // TODO Check validity of indices and length of vertices
 
@@ -214,6 +234,29 @@ impl Gui {
         )
         .expect("Could not create an index buffer");
 
-        Ok(super::Primitive2(Primitive2 { vertices, indices }))
+        Ok(super::Primitive2(Primitive2 {
+            vertices,
+            indices,
+            texture,
+        }))
+    }
+}
+
+pub type Texture = glium::texture::Texture2d;
+
+impl Gui {
+    pub fn make_texture(
+        &mut self,
+        image: image::DynamicImage,
+        _id: &super::TextureId,
+    ) -> super::Texture {
+        use glium::texture::{MipmapsOption, RawImage2d, Texture2d};
+
+        let image = image.to_rgba8();
+        let image_dimensions = image.dimensions();
+        let image = RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        let texture = Texture2d::with_mipmaps(&self.display, image, MipmapsOption::NoMipmap)
+            .expect("Could not upload texture to GPU");
+        super::Texture(texture)
     }
 }

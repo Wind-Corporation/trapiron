@@ -59,7 +59,7 @@ fn load_asset(req: AssetLoadRequest) -> std::io::Cursor<&[u8]> {
 /// The name must match regex `[A-Za-z_]+`, otherwise this function panics.
 ///
 /// Missing data, IO errors, decoding errors, allocation errors all result in a panic.
-pub fn load_image(name: &str) -> image::RgbaImage {
+pub fn load_image(name: &str) -> image::DynamicImage {
     let cursor = load_asset(AssetLoadRequest {
         kind: "Image",
         location: "image",
@@ -67,8 +67,6 @@ pub fn load_image(name: &str) -> image::RgbaImage {
         suffix: ".png",
     });
 
-    let image = image::load(cursor, image::ImageFormat::Png)
-        .expect(&format!("Image {name:?} is not a valid PNG file"));
-
-    image.to_rgba8()
+    image::load(cursor, image::ImageFormat::Png)
+        .expect(&format!("Image {name:?} is not a valid PNG file"))
 }
