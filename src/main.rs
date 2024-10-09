@@ -2,6 +2,7 @@
 
 mod crash;
 mod gui;
+mod domain;
 
 struct MyApplication {
     triangle: gui::Primitive3,
