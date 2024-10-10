@@ -55,7 +55,10 @@ impl Gui {
 /// An active render pass.
 ///
 /// A single instance of this object exists while a frame is being rendered.
-pub struct DrawContext<'a>(backend::DrawContext<'a>);
+pub struct DrawContext<'a> {
+    pub gui: &'a mut Gui,
+    backend: backend::DrawContext<'a>,
+}
 
 /// Something that can be rendered.
 pub trait Drawable {

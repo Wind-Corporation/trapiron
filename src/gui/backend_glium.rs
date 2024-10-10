@@ -72,62 +72,64 @@ impl Gui {
             window,
         })
     }
+}
 
-    /// Processes a single Glium event.
-    ///
-    /// Method arguments, other than `app`, correspond to the callback interface of
-    /// winit::event_loop::run.
-    fn handle_event(
-        &mut self,
-        app: &mut impl super::Application,
-        event: &winit::event::WindowEvent,
-        event_loop: &winit::event_loop::ActiveEventLoop,
-    ) {
-        use winit::event::WindowEvent::*;
+/// Processes a single Glium event.
+///
+/// Method arguments, other than `app`, correspond to the callback interface of
+/// winit::event_loop::run.
+fn handle_event(
+    gui: &mut super::Gui,
+    app: &mut impl super::Application,
+    event: &winit::event::WindowEvent,
+    event_loop: &winit::event_loop::ActiveEventLoop,
+) {
+    use winit::event::WindowEvent::*;
 
-        match &event {
-            CloseRequested => event_loop.exit(),
+    match &event {
+        CloseRequested => event_loop.exit(),
 
-            Resized(window_size) => {
-                self.display.resize((*window_size).into());
-            }
+        Resized(window_size) => {
+            gui.backend.display.resize((*window_size).into());
+        }
 
-            RedrawRequested => self.process_frame(app),
+        RedrawRequested => process_frame(gui, app),
 
-            _ => (),
+        _ => (),
+    };
+}
+
+/// Processes a single OpenGL frame.
+///
+/// This method, among other responsibilities, issues all OpenGL drawing commands via the
+/// application object. However, no input events are issued.
+fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
+    gui.backend.last_started_frame += 1;
+
+    let frame_number = gui.backend.last_started_frame;
+    crash::with_context(("Current frame", || frame_number), || {
+        let ctxt = DrawContext {
+            target: gui.backend.display.draw(),
+            now: gui.backend.start_time.elapsed(),
+            _phantom: std::marker::PhantomData,
         };
-    }
 
-    /// Processes a single OpenGL frame.
-    ///
-    /// This method, among other responsibilities, issues all OpenGL drawing commands via the
-    /// application object. However, no input events are issued.
-    fn process_frame(&mut self, app: &mut impl super::Application) {
-        self.last_started_frame += 1;
+        let mut ctxt = super::DrawContext { gui, backend: ctxt };
 
-        let frame_number = self.last_started_frame;
-        crash::with_context(("Current frame", || frame_number), || {
-            let mut ctxt = super::DrawContext(DrawContext {
-                target: self.display.draw(),
-                gui: &self,
-                now: self.start_time.elapsed(),
-            });
-
-            ctxt.0.target.clear_color(0.0, 0.0, 0.0, 1.0);
-            app.draw(&mut ctxt);
-            ctxt.0
-                .target
-                .finish()
-                .expect("OpenGL drawing sequence failed");
-        });
-    }
+        ctxt.backend.target.clear_color(0.0, 0.0, 0.0, 1.0);
+        app.draw(&mut ctxt);
+        ctxt.backend
+            .target
+            .finish()
+            .expect("OpenGL drawing sequence failed");
+    });
 }
 
 /// The super::DrawContext implementation for the Glium backend.
 pub struct DrawContext<'a> {
     target: glium::Frame,
-    gui: &'a Gui,
     now: std::time::Duration,
+    _phantom: std::marker::PhantomData<&'a ()>,
 }
 
 glium::implement_vertex!(Vertex3, position, color_multiplier, texture_coords);
@@ -148,7 +150,7 @@ pub struct Primitive2 {
 
 impl super::Drawable for Primitive3 {
     fn draw(&mut self, ctxt: &mut super::DrawContext) {
-        let t = ctxt.0.now.as_secs_f32();
+        let t = ctxt.backend.now.as_secs_f32();
         let x = (t * 1.0).sin();
         let y = (t * 1.3).sin();
         let s = (t * 2.3).sin() * 0.3 + 0.7;
@@ -171,12 +173,12 @@ impl super::Drawable for Primitive3 {
             tex: sampler,
         };
 
-        ctxt.0
+        ctxt.backend
             .target
             .draw(
                 &self.vertices,
                 &self.indices,
-                &ctxt.0.gui.program_3d,
+                &ctxt.gui.backend.program_3d,
                 &uniforms,
                 &Default::default(),
             )
