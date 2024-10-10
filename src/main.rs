@@ -8,6 +8,7 @@ mod gui;
 
 struct MyApplication {
     triangle: gui::Primitive3,
+    animation_start: Option<std::time::Instant>,
 }
 
 const BLOCK_TEXTURES: gui::TextureGroup = gui::TextureGroup {};
@@ -47,6 +48,7 @@ impl MyApplication {
                     texture,
                 )
                 .expect("Could not make a triangle"),
+            animation_start: None,
         }
     }
 }

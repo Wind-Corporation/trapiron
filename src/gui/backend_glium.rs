@@ -21,15 +21,6 @@ type WindowDisplay = glium::Display<glium::glutin::surface::WindowSurface>;
 ///
 /// All interactions with Gui objects must happen in main application thread.
 pub struct Gui {
-    /// The number of the frame that most recently started rendering.
-    ///
-    /// The counter is `0` before first frame, then it is incremented by one before invoking user
-    /// code during each frame render.
-    last_started_frame: u64,
-
-    /// The moment this struct was constructed.
-    start_time: std::time::Instant,
-
     /// OpenGL program for 3D visuals with lighting support.
     program_3d: glium::Program,
 
@@ -65,8 +56,6 @@ impl Gui {
         .expect("Could not create GLSL shared program");
 
         super::Gui::from(Self {
-            last_started_frame: 0,
-            start_time: std::time::Instant::now(),
             program_3d,
             display,
             window,
@@ -104,17 +93,20 @@ fn handle_event(
 /// This method, among other responsibilities, issues all OpenGL drawing commands via the
 /// application object. However, no input events are issued.
 fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
-    gui.backend.last_started_frame += 1;
+    gui.last_started_frame += 1;
 
-    let frame_number = gui.backend.last_started_frame;
+    let frame_number = gui.last_started_frame;
     crash::with_context(("Current frame", || frame_number), || {
         let ctxt = DrawContext {
             target: gui.backend.display.draw(),
-            now: gui.backend.start_time.elapsed(),
             _phantom: std::marker::PhantomData,
         };
 
-        let mut ctxt = super::DrawContext { gui, backend: ctxt };
+        let mut ctxt = super::DrawContext {
+            gui,
+            backend: ctxt,
+            time: std::time::Instant::now(),
+        };
 
         ctxt.backend.target.clear_color(0.0, 0.0, 0.0, 1.0);
         app.draw(&mut ctxt);
@@ -128,7 +120,6 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
 /// The super::DrawContext implementation for the Glium backend.
 pub struct DrawContext<'a> {
     target: glium::Frame,
-    now: std::time::Duration,
     _phantom: std::marker::PhantomData<&'a ()>,
 }
 
@@ -150,7 +141,7 @@ pub struct Primitive2 {
 
 impl super::Drawable3 for Primitive3 {
     fn draw(&mut self, dcf: &mut super::Dcf3) {
-        let t = dcf.ctxt.backend.now.as_secs_f32();
+        let t = (*dcf.time() - dcf.gui().start_time).as_secs_f32();
         let x = (t * 1.0).sin();
         let y = (t * 1.3).sin();
         let s = (t * 2.3).sin() * 0.3 + 0.7;

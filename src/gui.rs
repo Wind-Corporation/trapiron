@@ -29,6 +29,15 @@ pub struct Gui {
     /// The implementation provided by the backend.
     backend: backend::Gui,
 
+    /// The number of the frame that most recently started rendering.
+    ///
+    /// The counter is `0` before first frame, then it is incremented by one before invoking user
+    /// code during each frame render.
+    last_started_frame: u64,
+
+    /// The moment this struct was constructed.
+    start_time: std::time::Instant,
+
     /// All textures that have ever been created, keyed by texture name. Empty values should be
     /// treated as if they did not exist.
     ///
@@ -43,6 +52,8 @@ impl Gui {
     fn from(backend: backend::Gui) -> Self {
         Self {
             backend,
+            last_started_frame: 0,
+            start_time: std::time::Instant::now(),
             texture_registry: HashMap::new(),
         }
     }
@@ -64,6 +75,9 @@ pub struct DrawContext<'a> {
 
     /// The implementation provided by the backend.
     backend: backend::DrawContext<'a>,
+
+    /// The time moment that draw logic should use for this frame.
+    time: std::time::Instant,
 }
 
 impl<'a> DrawContext<'a> {
@@ -87,6 +101,16 @@ impl<'a> DrawContext<'a> {
             ctxt: self,
             state: Default::default(),
         }
+    }
+
+    /// Returns the time instant that draw logic should use.
+    pub fn time(&self) -> &std::time::Instant {
+        &self.time
+    }
+
+    /// Returns a reference to the [`Gui`] instance.
+    pub fn gui(&mut self) -> &mut Gui {
+        self.gui
     }
 }
 
@@ -148,11 +172,6 @@ pub struct Dcf<'a, 'b, S: DcState> {
 }
 
 impl<'a, 'b, S: DcState> Dcf<'a, 'b, S> {
-    /// Returns the immutable [`DcState`] of this draw context frame.
-    pub fn state(&self) -> &S {
-        &self.state
-    }
-
     /// Applies `func` to the state of this frame and pushes the result as a new frame.
     ///
     /// Does not alter the state associated with this frame; `func` is effectively undone when the
@@ -169,6 +188,21 @@ impl<'a, 'b, S: DcState> Dcf<'a, 'b, S> {
             ctxt: &mut self.ctxt,
             state,
         }
+    }
+
+    /// Returns the time instant that draw logic should use.
+    pub fn time(&self) -> &std::time::Instant {
+        self.ctxt.time()
+    }
+
+    /// Returns a reference to the [`Gui`] instance.
+    pub fn gui(&mut self) -> &mut Gui {
+        self.ctxt.gui()
+    }
+
+    /// Returns the immutable [`DcState`] of this draw context frame.
+    pub fn state(&self) -> &S {
+        &self.state
     }
 }
 
