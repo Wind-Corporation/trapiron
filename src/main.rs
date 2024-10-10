@@ -1,5 +1,7 @@
 #![feature(get_mut_unchecked)]
 
+use glam::{Affine3A, Vec3};
+
 mod crash;
 mod gui;
 
@@ -52,12 +54,8 @@ impl gui::Application for MyApplication {}
 
 impl gui::Drawable for MyApplication {
     fn draw(&mut self, dcf: &mut gui::Dcf) {
-        let mut f1 = dcf.apply(|s| *s += 1);
-        let mut _f2 = f1.apply(|s| *s *= 10);
-
-        f1.state();
-
-        self.triangle.draw(&mut f1);
+        self.triangle
+            .draw(&mut dcf.tfed(Affine3A::from_scale(Vec3::new(1f32, 0.5, 1f32))));
     }
 }
 

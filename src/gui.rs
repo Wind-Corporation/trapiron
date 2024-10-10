@@ -66,7 +66,14 @@ struct DrawContext<'a> {
 /// Mutable state used by drawing operations.
 ///
 /// See [`Dcf`].
-pub type DcState = u32;
+#[derive(Clone, Default)]
+pub struct DcState {
+    /// The transform from model coordinates to world coordinates, i.e. the position, scale and
+    /// rotation of a `Primitive` relative to the distant light sources.
+    ///
+    /// This value is used for lighting computations.
+    pub world_transform: glam::Affine3A,
+}
 
 /// A proxy for draw calls available to [`Drawable`].
 ///
@@ -113,12 +120,19 @@ impl<'a, 'b> Dcf<'a, 'b> {
     where
         F: FnOnce(&mut DcState),
     {
-        let mut state = self.state;
+        let mut state = self.state.clone();
         func(&mut state);
         Dcf {
             ctxt: &mut self.ctxt,
             state,
         }
+    }
+
+    /// Returns a frame the applies `transform` before the rest of this frame's _world transform_.
+    ///
+    /// See [`Dcf::apply`] for details.
+    pub fn tfed<'c>(&'c mut self, transform: glam::Affine3A) -> Dcf<'c, 'b> {
+        self.apply(|s| s.world_transform *= transform)
     }
 }
 
