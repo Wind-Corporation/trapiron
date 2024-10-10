@@ -1,5 +1,6 @@
 #![feature(get_mut_unchecked)]
 
+use crate::gui::Drawable3;
 use glam::{Affine3A, Vec3};
 
 mod crash;
@@ -50,10 +51,9 @@ impl MyApplication {
     }
 }
 
-impl gui::Application for MyApplication {}
-
-impl gui::Drawable for MyApplication {
-    fn draw(&mut self, dcf: &mut gui::Dcf) {
+impl gui::Application for MyApplication {
+    fn draw(&mut self, ctxt: &mut gui::DrawContext) {
+        let mut dcf = ctxt.start_3();
         self.triangle
             .draw(&mut dcf.tfed(Affine3A::from_scale(Vec3::new(1f32, 0.5, 1f32))));
     }

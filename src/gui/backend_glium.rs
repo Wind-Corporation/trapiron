@@ -117,14 +117,7 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
         let mut ctxt = super::DrawContext { gui, backend: ctxt };
 
         ctxt.backend.target.clear_color(0.0, 0.0, 0.0, 1.0);
-
-        let mut first_frame = super::Dcf {
-            ctxt: &mut ctxt,
-            state: Default::default(),
-        };
-
-        app.draw(&mut first_frame);
-
+        app.draw(&mut ctxt);
         ctxt.backend
             .target
             .finish()
@@ -155,8 +148,8 @@ pub struct Primitive2 {
     texture: Rc<super::Texture>,
 }
 
-impl super::Drawable for Primitive3 {
-    fn draw(&mut self, dcf: &mut super::Dcf) {
+impl super::Drawable3 for Primitive3 {
+    fn draw(&mut self, dcf: &mut super::Dcf3) {
         let t = dcf.ctxt.backend.now.as_secs_f32();
         let x = (t * 1.0).sin();
         let y = (t * 1.3).sin();
@@ -194,8 +187,8 @@ impl super::Drawable for Primitive3 {
     }
 }
 
-impl super::Drawable for Primitive2 {
-    fn draw(&mut self, _dcf: &mut super::Dcf) {
+impl super::Drawable2 for Primitive2 {
+    fn draw(&mut self, _dcf: &mut super::Dcf2) {
         unimplemented!();
     }
 }

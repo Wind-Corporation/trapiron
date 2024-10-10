@@ -55,7 +55,10 @@ impl Gui {
 /// An active render operation.
 ///
 /// A single instance of this object exists while a frame is being rendered.
-struct DrawContext<'a> {
+///
+/// Use [`DrawContext::start_2`] or [`DrawContext::start_3`] to obtain a `Dcf` that can be used
+/// for draw calls.
+pub struct DrawContext<'a> {
     /// The [`Gui`] instance.
     gui: &'a mut Gui,
 
@@ -63,17 +66,57 @@ struct DrawContext<'a> {
     backend: backend::DrawContext<'a>,
 }
 
-/// Mutable state used by drawing operations.
+impl<'a> DrawContext<'a> {
+    /// Begins drawing operations in 2D.
+    ///
+    /// Creates the first `Dcf2` that will serve as the basis for the 2D draw state stack. After it
+    /// is dropped, all changes to the drawing environment will be reset.
+    pub fn start_2<'b>(&'b mut self) -> Dcf2<'b, 'a> {
+        Dcf2 {
+            ctxt: self,
+            state: Default::default(),
+        }
+    }
+
+    /// Begins drawing operations in 3D.
+    ///
+    /// Creates the first `Dcf2` that will serve as the basis for the 3D draw state stack. After it
+    /// is dropped, all changes to the drawing environment will be reset.
+    pub fn start_3<'b>(&'b mut self) -> Dcf3<'b, 'a> {
+        Dcf3 {
+            ctxt: self,
+            state: Default::default(),
+        }
+    }
+}
+
+pub trait DcState: Clone {}
+
+/// Mutable state used by drawing operations in 3D contexts.
 ///
-/// See [`Dcf`].
+/// See [`Dcf3`].
 #[derive(Clone, Default)]
-pub struct DcState {
+pub struct DcState3 {
     /// The transform from model coordinates to world coordinates, i.e. the position, scale and
-    /// rotation of a `Primitive` relative to the distant light sources.
+    /// rotation of a `Primitive3` relative to the distant light sources.
     ///
     /// This value is used for lighting computations.
     pub world_transform: glam::Affine3A,
 }
+
+impl DcState for DcState3 {}
+
+/// Mutable state used by drawing operations in 2D contexts.
+///
+/// See [`Dcf2`].
+#[derive(Clone, Default)]
+pub struct DcState2 {
+    /// The transform from model coordinates to canvas coordinates, i.e. the position, scale and
+    /// rotation of a `Primitive2` in the canvas coordinate system.
+    pub transform: glam::Affine2,
+}
+
+impl DcState for DcState2 {}
 
 /// A proxy for draw calls available to [`Drawable`].
 ///
@@ -89,7 +132,7 @@ pub struct DcState {
 ///
 /// To prevent confusion, using a `Dcf` that does not represent the top of the state stack is
 /// disallowed at compile time.
-pub struct Dcf<'a, 'b> {
+pub struct Dcf<'a, 'b, S: DcState> {
     /// The underlying draw context that is "shared" between all frames.
     ///
     /// The reference is owned by the `Dcf` at the top of the stack.
@@ -101,12 +144,12 @@ pub struct Dcf<'a, 'b> {
     /// implementation detail.
     ///
     /// For a single `Dcf`, this is an immutable field.
-    state: DcState,
+    state: S,
 }
 
-impl<'a, 'b> Dcf<'a, 'b> {
+impl<'a, 'b, S: DcState> Dcf<'a, 'b, S> {
     /// Returns the immutable [`DcState`] of this draw context frame.
-    pub fn state(&self) -> &DcState {
+    pub fn state(&self) -> &S {
         &self.state
     }
 
@@ -116,9 +159,9 @@ impl<'a, 'b> Dcf<'a, 'b> {
     /// returned value is dropped.
     ///
     /// `func` should mutate the provided [`DcState`] in place; it is operating on a mutable copy.
-    pub fn apply<'c, F>(&'c mut self, func: F) -> Dcf<'c, 'b>
+    pub fn apply<'c, F>(&'c mut self, func: F) -> Dcf<'c, 'b, S>
     where
-        F: FnOnce(&mut DcState),
+        F: FnOnce(&mut S),
     {
         let mut state = self.state.clone();
         func(&mut state);
@@ -127,19 +170,70 @@ impl<'a, 'b> Dcf<'a, 'b> {
             state,
         }
     }
+}
 
+/// A `Dcf` for 3D contexts.
+pub type Dcf3<'a, 'b> = Dcf<'a, 'b, DcState3>;
+
+impl<'a, 'b> Dcf3<'a, 'b> {
     /// Returns a frame the applies `transform` before the rest of this frame's _world transform_.
     ///
-    /// See [`Dcf::apply`] for details.
-    pub fn tfed<'c>(&'c mut self, transform: glam::Affine3A) -> Dcf<'c, 'b> {
+    /// See [`Dcf3::apply`] for details.
+    pub fn tfed<'c>(&'c mut self, transform: glam::Affine3A) -> Dcf3<'c, 'b> {
         self.apply(|s| s.world_transform *= transform)
     }
 }
 
+/// A `Dcf` for 2D contexts.
+pub type Dcf2<'a, 'b> = Dcf<'a, 'b, DcState2>;
+
+impl<'a, 'b> Dcf2<'a, 'b> {
+    /// Returns a frame the applies `transform` before the rest of this frame's transform.
+    ///
+    /// See [`Dcf2::apply`] for details.
+    pub fn tfed<'c>(&'c mut self, transform: glam::Affine2) -> Dcf2<'c, 'b> {
+        self.apply(|s| s.transform *= transform)
+    }
+}
+
 /// Something that can be rendered.
-pub trait Drawable {
+///
+/// For custom types, implement [`Drawable2`] or [`Drawable3`] as appropriate.
+pub trait Drawable<T: DcState> {
     /// Draws this object using the provided draw context frame.
-    fn draw(&mut self, dcf: &mut Dcf);
+    ///
+    /// This is a wrapper for [`Drawable3::draw`] or [`Drawable2::draw`] as appropriate.
+    fn draw_generic(&mut self, dcf: &mut Dcf<T>);
+}
+
+/// Something that can be rendered in a 3D context.
+pub trait Drawable3 {
+    /// Draws this object using the provided draw context frame.
+    fn draw(&mut self, dcf: &mut Dcf3);
+}
+
+impl<T> Drawable<DcState3> for T
+where
+    T: Drawable3,
+{
+    fn draw_generic(&mut self, dcf: &mut Dcf3) {
+        self.draw(dcf);
+    }
+}
+
+/// Something that can be rendered in a 2D context.
+pub trait Drawable2 {
+    /// Draws this object using the provided draw context frame.
+    fn draw(&mut self, dcf: &mut Dcf2);
+}
+
+impl<T> Drawable<DcState2> for T
+where
+    T: Drawable2,
+{
+    fn draw_generic(&mut self, dcf: &mut Dcf2) {
+        self.draw(dcf);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -156,7 +250,9 @@ pub trait Drawable {
 ///
 /// ## See also
 /// backend::run
-pub trait Application: Drawable {}
+pub trait Application {
+    fn draw(&mut self, dcf: &mut DrawContext);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Primitives
@@ -218,8 +314,8 @@ pub struct Vertex2 {
 /// list, that has a set of textures associated with it.
 pub struct Primitive3(backend::Primitive3);
 
-impl Drawable for Primitive3 {
-    fn draw(&mut self, dcf: &mut Dcf) {
+impl Drawable3 for Primitive3 {
+    fn draw(&mut self, dcf: &mut Dcf3) {
         self.0.draw(dcf);
     }
 }
@@ -230,8 +326,8 @@ impl Drawable for Primitive3 {
 /// list, that has a set textures associated with it.
 pub struct Primitive2(backend::Primitive2);
 
-impl Drawable for Primitive2 {
-    fn draw(&mut self, dcf: &mut Dcf) {
+impl Drawable2 for Primitive2 {
+    fn draw(&mut self, dcf: &mut Dcf2) {
         self.0.draw(dcf);
     }
 }
