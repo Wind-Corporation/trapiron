@@ -141,17 +141,6 @@ pub struct Primitive2 {
 
 impl super::Drawable3 for Primitive3 {
     fn draw(&mut self, dcf: &mut super::Dcf3) {
-        let t = (*dcf.time() - dcf.gui().start_time).as_secs_f32();
-        let x = (t * 1.0).sin();
-        let y = (t * 1.3).sin();
-        let s = (t * 2.3).sin() * 0.3 + 0.7;
-
-        let matrix = [
-            [s, 0.0, 0.0, 0.0],
-            [0.0, s, 0.0, 0.0],
-            [0.0, 0.0, s, 0.0],
-            [x * 0.5, y * 0.5, 0.0, 1.0],
-        ];
         let sampler = self
             .texture
             .0
@@ -159,8 +148,9 @@ impl super::Drawable3 for Primitive3 {
             .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest)
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
 
+        let jank = glam::Mat4::from(dcf.state.world_transform);
         let uniforms = glium::uniform! {
-            world_transform: matrix,
+            world_transform: jank.to_cols_array_2d(),
             tex: sampler,
         };
 

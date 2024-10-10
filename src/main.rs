@@ -56,8 +56,19 @@ impl MyApplication {
 impl gui::Application for MyApplication {
     fn draw(&mut self, ctxt: &mut gui::DrawContext) {
         let mut dcf = ctxt.start_3();
-        self.triangle
-            .draw(&mut dcf.tfed(Affine3A::from_scale(Vec3::new(1f32, 0.5, 1f32))));
+
+        let t = self
+            .animation_start
+            .get_or_insert_with(|| std::time::Instant::now());
+        let t = (*dcf.time() - *t).as_secs_f32();
+
+        let transform = Affine3A::from_scale_rotation_translation(
+            Vec3::splat((t * 2.3).sin() * 0.3 + 0.7),
+            Default::default(),
+            Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0),
+        );
+
+        self.triangle.draw(&mut dcf.tfed(transform));
     }
 }
 
