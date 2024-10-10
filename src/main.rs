@@ -51,8 +51,13 @@ impl MyApplication {
 impl gui::Application for MyApplication {}
 
 impl gui::Drawable for MyApplication {
-    fn draw(&mut self, ctxt: &mut gui::DrawContext) {
-        self.triangle.draw(ctxt);
+    fn draw(&mut self, dcf: &mut gui::Dcf) {
+        let mut f1 = dcf.apply(|s| *s += 1);
+        let mut _f2 = f1.apply(|s| *s *= 10);
+
+        f1.state();
+
+        self.triangle.draw(&mut f1);
     }
 }
 

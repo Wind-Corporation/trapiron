@@ -52,18 +52,80 @@ impl Gui {
 // Drawing basics
 //
 
-/// An active render pass.
+/// An active render operation.
 ///
 /// A single instance of this object exists while a frame is being rendered.
-pub struct DrawContext<'a> {
-    pub gui: &'a mut Gui,
+struct DrawContext<'a> {
+    /// The [`Gui`] instance.
+    gui: &'a mut Gui,
+
+    /// The implementation provided by the backend.
     backend: backend::DrawContext<'a>,
+}
+
+/// Mutable state used by drawing operations.
+///
+/// See [`Dcf`].
+pub type DcState = u32;
+
+/// A proxy for draw calls available to [`Drawable`].
+///
+/// Each instance a `Dcf` corresponds to particular immutable settings for drawing operations,
+/// stored in a [`DcState`]. This data is primarily used by _PrimitiveN::draw_, but it is also
+/// accessible via [`Dcf::state`].
+///
+/// `Dcf` values are immutable, but a child frame with mutated state can be created. This
+/// corresponds to pushing a frame onto the state stack. The child frame will restore settings by
+/// popping a single `DcState` off of the stack when it is dropped.
+///
+/// The name stands for _Draw Context Frame_, referring to frames of the state stack.
+///
+/// To prevent confusion, using a `Dcf` that does not represent the top of the state stack is
+/// disallowed at compile time.
+pub struct Dcf<'a, 'b> {
+    /// The underlying draw context that is "shared" between all frames.
+    ///
+    /// The reference is owned by the `Dcf` at the top of the stack.
+    ctxt: &'a mut DrawContext<'b>,
+
+    /// The state of the frame.
+    ///
+    /// Psych! The state stack _is_ the call stack. Don't count on it, though: it is an
+    /// implementation detail.
+    ///
+    /// For a single `Dcf`, this is an immutable field.
+    state: DcState,
+}
+
+impl<'a, 'b> Dcf<'a, 'b> {
+    /// Returns the immutable [`DcState`] of this draw context frame.
+    pub fn state(&self) -> &DcState {
+        &self.state
+    }
+
+    /// Applies `func` to the state of this frame and pushes the result as a new frame.
+    ///
+    /// Does not alter the state associated with this frame; `func` is effectively undone when the
+    /// returned value is dropped.
+    ///
+    /// `func` should mutate the provided [`DcState`] in place; it is operating on a mutable copy.
+    pub fn apply<'c, F>(&'c mut self, func: F) -> Dcf<'c, 'b>
+    where
+        F: FnOnce(&mut DcState),
+    {
+        let mut state = self.state;
+        func(&mut state);
+        Dcf {
+            ctxt: &mut self.ctxt,
+            state,
+        }
+    }
 }
 
 /// Something that can be rendered.
 pub trait Drawable {
-    /// Draws this object using the provided DrawContext.
-    fn draw(&mut self, ctxt: &mut DrawContext);
+    /// Draws this object using the provided draw context frame.
+    fn draw(&mut self, dcf: &mut Dcf);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -143,8 +205,8 @@ pub struct Vertex2 {
 pub struct Primitive3(backend::Primitive3);
 
 impl Drawable for Primitive3 {
-    fn draw(&mut self, ctxt: &mut DrawContext) {
-        self.0.draw(ctxt);
+    fn draw(&mut self, dcf: &mut Dcf) {
+        self.0.draw(dcf);
     }
 }
 
@@ -155,8 +217,8 @@ impl Drawable for Primitive3 {
 pub struct Primitive2(backend::Primitive2);
 
 impl Drawable for Primitive2 {
-    fn draw(&mut self, ctxt: &mut DrawContext) {
-        self.0.draw(ctxt);
+    fn draw(&mut self, dcf: &mut Dcf) {
+        self.0.draw(dcf);
     }
 }
 
