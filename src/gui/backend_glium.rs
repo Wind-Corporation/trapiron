@@ -21,15 +21,6 @@ type WindowDisplay = glium::Display<glium::glutin::surface::WindowSurface>;
 ///
 /// All interactions with Gui objects must happen in main application thread.
 pub struct Gui {
-    /// The number of the frame that most recently started rendering.
-    ///
-    /// The counter is `0` before first frame, then it is incremented by one before invoking user
-    /// code during each frame render.
-    last_started_frame: u64,
-
-    /// The moment this struct was constructed.
-    start_time: std::time::Instant,
-
     /// OpenGL program for 3D visuals with lighting support.
     program_3d: glium::Program,
 
@@ -65,69 +56,71 @@ impl Gui {
         .expect("Could not create GLSL shared program");
 
         super::Gui::from(Self {
-            last_started_frame: 0,
-            start_time: std::time::Instant::now(),
             program_3d,
             display,
             window,
         })
     }
+}
 
-    /// Processes a single Glium event.
-    ///
-    /// Method arguments, other than `app`, correspond to the callback interface of
-    /// winit::event_loop::run.
-    fn handle_event(
-        &mut self,
-        app: &mut impl super::Application,
-        event: &winit::event::WindowEvent,
-        event_loop: &winit::event_loop::ActiveEventLoop,
-    ) {
-        use winit::event::WindowEvent::*;
+/// Processes a single Glium event.
+///
+/// Method arguments, other than `app`, correspond to the callback interface of
+/// winit::event_loop::run.
+fn handle_event(
+    gui: &mut super::Gui,
+    app: &mut impl super::Application,
+    event: &winit::event::WindowEvent,
+    event_loop: &winit::event_loop::ActiveEventLoop,
+) {
+    use winit::event::WindowEvent::*;
 
-        match &event {
-            CloseRequested => event_loop.exit(),
+    match &event {
+        CloseRequested => event_loop.exit(),
 
-            Resized(window_size) => {
-                self.display.resize((*window_size).into());
-            }
+        Resized(window_size) => {
+            gui.backend.display.resize((*window_size).into());
+        }
 
-            RedrawRequested => self.process_frame(app),
+        RedrawRequested => process_frame(gui, app),
 
-            _ => (),
+        _ => (),
+    };
+}
+
+/// Processes a single OpenGL frame.
+///
+/// This method, among other responsibilities, issues all OpenGL drawing commands via the
+/// application object. However, no input events are issued.
+fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
+    gui.last_started_frame += 1;
+
+    let frame_number = gui.last_started_frame;
+    crash::with_context(("Current frame", || frame_number), || {
+        let ctxt = DrawContext {
+            target: gui.backend.display.draw(),
+            _phantom: std::marker::PhantomData,
         };
-    }
 
-    /// Processes a single OpenGL frame.
-    ///
-    /// This method, among other responsibilities, issues all OpenGL drawing commands via the
-    /// application object. However, no input events are issued.
-    fn process_frame(&mut self, app: &mut impl super::Application) {
-        self.last_started_frame += 1;
+        let mut ctxt = super::DrawContext {
+            gui,
+            backend: ctxt,
+            time: std::time::Instant::now(),
+        };
 
-        let frame_number = self.last_started_frame;
-        crash::with_context(("Current frame", || frame_number), || {
-            let mut ctxt = super::DrawContext(DrawContext {
-                target: self.display.draw(),
-                gui: &self,
-                now: self.start_time.elapsed(),
-            });
-
-            ctxt.0.target.clear_color(0.0, 0.0, 0.0, 1.0);
-            app.draw(&mut ctxt);
-            ctxt.0
-                .target
-                .finish()
-                .expect("OpenGL drawing sequence failed");
-        });
-    }
+        ctxt.backend.target.clear_color(0.0, 0.0, 0.0, 1.0);
+        app.draw(&mut ctxt);
+        ctxt.backend
+            .target
+            .finish()
+            .expect("OpenGL drawing sequence failed");
+    });
 }
 
 /// The super::DrawContext implementation for the Glium backend.
 pub struct DrawContext<'a> {
     target: glium::Frame,
-    gui: &'a Gui,
-    now: std::time::Duration,
+    _phantom: std::marker::PhantomData<&'a ()>,
 }
 
 glium::implement_vertex!(Vertex3, position, color_multiplier, texture_coords);
@@ -146,19 +139,8 @@ pub struct Primitive2 {
     texture: Rc<super::Texture>,
 }
 
-impl super::Drawable for Primitive3 {
-    fn draw(&mut self, ctxt: &mut super::DrawContext) {
-        let t = ctxt.0.now.as_secs_f32();
-        let x = (t * 1.0).sin();
-        let y = (t * 1.3).sin();
-        let s = (t * 2.3).sin() * 0.3 + 0.7;
-
-        let matrix = [
-            [s, 0.0, 0.0, 0.0],
-            [0.0, s, 0.0, 0.0],
-            [0.0, 0.0, s, 0.0],
-            [x * 0.5, y * 0.5, 0.0, 1.0],
-        ];
+impl super::Drawable3 for Primitive3 {
+    fn draw(&mut self, dcf: &mut super::Dcf3) {
         let sampler = self
             .texture
             .0
@@ -167,16 +149,18 @@ impl super::Drawable for Primitive3 {
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
 
         let uniforms = glium::uniform! {
-            world_transform: matrix,
+            world_transform: dcf.state.world_transform.to_cols_array_2d(),
+            color_multiplier_global: dcf.state.color_multiplier.0.to_array(),
             tex: sampler,
         };
 
-        ctxt.0
+        dcf.ctxt
+            .backend
             .target
             .draw(
                 &self.vertices,
                 &self.indices,
-                &ctxt.0.gui.program_3d,
+                &dcf.ctxt.gui.backend.program_3d,
                 &uniforms,
                 &Default::default(),
             )
@@ -184,8 +168,8 @@ impl super::Drawable for Primitive3 {
     }
 }
 
-impl super::Drawable for Primitive2 {
-    fn draw(&mut self, _ctxt: &mut super::DrawContext) {
+impl super::Drawable2 for Primitive2 {
+    fn draw(&mut self, _dcf: &mut super::Dcf2) {
         unimplemented!();
     }
 }

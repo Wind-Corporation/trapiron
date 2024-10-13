@@ -155,7 +155,7 @@ where
         }
 
         crate::crash::with_context(("Current winit (GUI) event", || &event), || {
-            gui.backend.handle_event(user_app, &event, event_loop);
+            super::handle_event(gui, user_app, &event, event_loop);
         });
     }
 
