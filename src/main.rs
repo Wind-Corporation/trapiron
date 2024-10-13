@@ -7,7 +7,7 @@ mod crash;
 mod gui;
 
 struct MyApplication {
-    triangle: gui::Primitive3,
+    rect: gui::Primitive3,
     animation_start: Option<std::time::Instant>,
 }
 
@@ -20,7 +20,7 @@ impl MyApplication {
         let texture = gui.texture(BLOCK_TEXTURES.id("test"));
 
         Self {
-            triangle: gui
+            rect: gui
                 .make_primitive3(
                     &[
                         gui::Vertex3 {
@@ -47,7 +47,7 @@ impl MyApplication {
                     &[0, 1, 2, 3, 2, 1],
                     texture,
                 )
-                .expect("Could not make a triangle"),
+                .expect("Could not make a rectangle"),
             animation_start: None,
         }
     }
@@ -57,9 +57,7 @@ impl gui::Application for MyApplication {
     fn draw(&mut self, ctxt: &mut gui::DrawContext) {
         let mut dcf = ctxt.start_3();
 
-        let t = self
-            .animation_start
-            .get_or_insert_with(|| std::time::Instant::now());
+        let t = self.animation_start.get_or_insert(*dcf.time());
         let t = (*dcf.time() - *t).as_secs_f32();
 
         let transform = Affine3A::from_scale_rotation_translation(
@@ -68,7 +66,7 @@ impl gui::Application for MyApplication {
             Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0),
         );
 
-        self.triangle.draw(&mut dcf.tfed(transform));
+        self.rect.draw(&mut dcf.tfed(transform));
     }
 }
 
