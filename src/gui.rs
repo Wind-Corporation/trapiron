@@ -210,11 +210,25 @@ impl<'a, 'b, S: DcState> Dcf<'a, 'b, S> {
 pub type Dcf3<'a, 'b> = Dcf<'a, 'b, DcState3>;
 
 impl<'a, 'b> Dcf3<'a, 'b> {
-    /// Returns a frame the applies `transform` before the rest of this frame's _world transform_.
+    /// In a new frame, applies the `transform` to _world transform_.
     ///
     /// See [`Dcf3::apply`] for details.
     pub fn tfed<'c>(&'c mut self, transform: glam::Affine3A) -> Dcf3<'c, 'b> {
         self.apply(|s| s.world_transform *= transform)
+    }
+
+    /// In a new frame, applies a translation such that (0; 0; 0) maps to `new_zero` in this frame.
+    ///
+    /// See [`Dcf3::apply`] for details.
+    pub fn shifted<'c>(&'c mut self, new_zero: glam::Vec3) -> Dcf3<'c, 'b> {
+        self.tfed(glam::Affine3A::from_translation(new_zero))
+    }
+
+    /// In a new frame, scales such that a unit cube has dimentions `new_units` in this frame.
+    ///
+    /// See [`Dcf3::apply`] for details.
+    pub fn scaled<'c>(&'c mut self, new_units: glam::Vec3) -> Dcf3<'c, 'b> {
+        self.tfed(glam::Affine3A::from_scale(new_units))
     }
 }
 

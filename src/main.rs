@@ -66,7 +66,15 @@ impl gui::Application for MyApplication {
             Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0),
         );
 
-        self.rect.draw(&mut dcf.tfed(transform));
+        self.rect.draw(
+            &mut dcf
+                // Move in screen space
+                .shifted(Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0))
+                // Slow pulsing
+                .scaled(Vec3::splat((t * 2.3).sin() * 0.3 + 0.7))
+                // Fast wobble (demonstrates that move is not influenced by scale)
+                .scaled(Vec3::new((t * 20.0).sin() * 0.1 + 0.9, 1.0, 1.0)),
+        );
     }
 }
 
