@@ -148,9 +148,8 @@ impl super::Drawable3 for Primitive3 {
             .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest)
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
 
-        let jank = glam::Mat4::from(dcf.state.world_transform);
         let uniforms = glium::uniform! {
-            world_transform: jank.to_cols_array_2d(),
+            world_transform: dcf.state.world_transform.to_cols_array_2d(),
             tex: sampler,
         };
 

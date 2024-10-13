@@ -451,8 +451,8 @@ dependencies = [
 
 [[package]]
 name = "glium"
-version = "0.35.0"
-source = "git+https://github.com/OLEGSHA/glium.git?branch=master#ad4dbefc51a44748110fdc7ae3b2feb645722265"
+version = "0.36.0"
+source = "git+https://github.com/OLEGSHA/glium.git?branch=support-all-mat-variants-in-uniforms#9e427dd88f5210da8db0af5539c38c47c7402ece"
 dependencies = [
  "backtrace",
  "fnv",
