@@ -53,6 +53,20 @@ impl MyApplication {
     }
 }
 
+fn draw_bouncy(object: &mut impl gui::Drawable3, t: f32, dcf: &mut gui::Dcf3) {
+    // Move in screen space
+    let mut dcf = dcf.shifted(Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0));
+    object.draw(&mut dcf.colored(&gui::OpaqueColor::rgb(Vec3::splat(0.1))));
+
+    // Slow pulsing
+    let mut dcf = dcf.scaled(Vec3::splat((t * 2.3).sin() * 0.3 + 0.7));
+    object.draw(&mut dcf.colored(&gui::OpaqueColor::rgb(Vec3::splat(0.3))));
+
+    // Fast wobble (demonstrates that move is not influenced by scale)
+    let mut dcf = dcf.scaled(Vec3::new((t * 20.0).sin() * 0.1 + 0.9, 1.0, 1.0));
+    object.draw(&mut dcf);
+}
+
 impl gui::Application for MyApplication {
     fn draw(&mut self, ctxt: &mut gui::DrawContext) {
         let mut dcf = ctxt.start_3();
@@ -60,20 +74,18 @@ impl gui::Application for MyApplication {
         let t = self.animation_start.get_or_insert(*dcf.time());
         let t = (*dcf.time() - *t).as_secs_f32();
 
-        let transform = Affine3A::from_scale_rotation_translation(
-            Vec3::splat((t * 2.3).sin() * 0.3 + 0.7),
-            Default::default(),
-            Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0),
-        );
+        let blue = gui::OpaqueColor::rgb(Vec3::new(0.0, 0.1, 0.9));
+        let green = gui::OpaqueColor::rgb(Vec3::new(0.05, 0.8, 0.1));
 
-        self.rect.draw(
+        draw_bouncy(&mut self.rect, -t, &mut dcf.colored(&blue));
+        draw_bouncy(&mut self.rect, t, &mut dcf);
+        draw_bouncy(
+            &mut self.rect,
+            t * 5.0,
             &mut dcf
-                // Move in screen space
-                .shifted(Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0))
-                // Slow pulsing
-                .scaled(Vec3::splat((t * 2.3).sin() * 0.3 + 0.7))
-                // Fast wobble (demonstrates that move is not influenced by scale)
-                .scaled(Vec3::new((t * 20.0).sin() * 0.1 + 0.9, 1.0, 1.0)),
+                .shifted(Vec3::new(0.9, 0.9, 0.0))
+                .scaled(Vec3::splat(0.1))
+                .colored(&green),
         );
     }
 }

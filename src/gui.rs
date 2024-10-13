@@ -119,16 +119,30 @@ pub trait DcState: Clone {}
 /// Mutable state used by drawing operations in 3D contexts.
 ///
 /// See [`Dcf3`].
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct DcState3 {
     /// The transform from model coordinates to world coordinates, i.e. the position, scale and
     /// rotation of a `Primitive3` relative to the distant light sources.
     ///
     /// This value is used for lighting computations.
     pub world_transform: glam::Affine3A,
+
+    /// A global color multiplier.
+    ///
+    /// All pixel colors will be multiplied by this color in RGB space without gamma correction.
+    pub color_multiplier: OpaqueColor,
 }
 
 impl DcState for DcState3 {}
+
+impl Default for DcState3 {
+    fn default() -> Self {
+        Self {
+            world_transform: glam::Affine3A::IDENTITY,
+            color_multiplier: OpaqueColor::rgb(glam::Vec3::splat(1.0)),
+        }
+    }
+}
 
 /// Mutable state used by drawing operations in 2D contexts.
 ///
@@ -229,6 +243,13 @@ impl<'a, 'b> Dcf3<'a, 'b> {
     /// See [`Dcf3::apply`] for details.
     pub fn scaled<'c>(&'c mut self, new_units: glam::Vec3) -> Dcf3<'c, 'b> {
         self.tfed(glam::Affine3A::from_scale(new_units))
+    }
+
+    /// In a new frame, applies an additional color multiplier filter to rendered primitives.
+    ///
+    /// See [`Dcf3::apply`] for details.
+    pub fn colored<'c>(&'c mut self, filter: &OpaqueColor) -> Dcf3<'c, 'b> {
+        self.apply(|s| s.color_multiplier.0 *= filter.0)
     }
 }
 
@@ -479,5 +500,22 @@ impl Gui {
             self.texture_registry.insert(id, Rc::downgrade(&texture));
             texture
         })
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Colors
+//
+
+/// A color without transparency information.
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct OpaqueColor(glam::Vec3);
+
+impl OpaqueColor {
+    /// Creates a new color from an RGB triplet.
+    ///
+    /// Expected channel values are `[0; 1]`, but this is not a strict requirement.
+    pub fn rgb(rgb: glam::Vec3) -> Self {
+        Self(rgb)
     }
 }

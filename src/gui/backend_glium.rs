@@ -150,6 +150,7 @@ impl super::Drawable3 for Primitive3 {
 
         let uniforms = glium::uniform! {
             world_transform: dcf.state.world_transform.to_cols_array_2d(),
+            color_multiplier_global: dcf.state.color_multiplier.0.to_array(),
             tex: sampler,
         };
 
