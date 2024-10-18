@@ -1,10 +1,14 @@
 #![feature(get_mut_unchecked)]
 
+use crate::gui::Drawable3;
+use glam::{Affine3A, Vec3};
+
 mod crash;
 mod gui;
 
 struct MyApplication {
-    triangle: gui::Primitive3,
+    rect: gui::Primitive3,
+    animation_start: Option<std::time::Instant>,
 }
 
 const BLOCK_TEXTURES: gui::TextureGroup = gui::TextureGroup {};
@@ -16,7 +20,7 @@ impl MyApplication {
         let texture = gui.texture(BLOCK_TEXTURES.id("test"));
 
         Self {
-            triangle: gui
+            rect: gui
                 .make_primitive3(
                     &[
                         gui::Vertex3 {
@@ -43,16 +47,46 @@ impl MyApplication {
                     &[0, 1, 2, 3, 2, 1],
                     texture,
                 )
-                .expect("Could not make a triangle"),
+                .expect("Could not make a rectangle"),
+            animation_start: None,
         }
     }
 }
 
-impl gui::Application for MyApplication {}
+fn draw_bouncy(object: &mut impl gui::Drawable3, t: f32, dcf: &mut gui::Dcf3) {
+    // Move in screen space
+    let mut dcf = dcf.shifted(Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0));
+    object.draw(&mut dcf.colored(&gui::OpaqueColor::rgb(Vec3::splat(0.1))));
 
-impl gui::Drawable for MyApplication {
+    // Slow pulsing
+    let mut dcf = dcf.scaled(Vec3::splat((t * 2.3).sin() * 0.3 + 0.7));
+    object.draw(&mut dcf.colored(&gui::OpaqueColor::rgb(Vec3::splat(0.3))));
+
+    // Fast wobble (demonstrates that move is not influenced by scale)
+    let mut dcf = dcf.scaled(Vec3::new((t * 20.0).sin() * 0.1 + 0.9, 1.0, 1.0));
+    object.draw(&mut dcf);
+}
+
+impl gui::Application for MyApplication {
     fn draw(&mut self, ctxt: &mut gui::DrawContext) {
-        self.triangle.draw(ctxt);
+        let mut dcf = ctxt.start_3();
+
+        let t = self.animation_start.get_or_insert(*dcf.time());
+        let t = (*dcf.time() - *t).as_secs_f32();
+
+        let blue = gui::OpaqueColor::rgb(Vec3::new(0.0, 0.1, 0.9));
+        let green = gui::OpaqueColor::rgb(Vec3::new(0.05, 0.8, 0.1));
+
+        draw_bouncy(&mut self.rect, -t, &mut dcf.colored(&blue));
+        draw_bouncy(&mut self.rect, t, &mut dcf);
+        draw_bouncy(
+            &mut self.rect,
+            t * 5.0,
+            &mut dcf
+                .shifted(Vec3::new(0.9, 0.9, 0.0))
+                .scaled(Vec3::splat(0.1))
+                .colored(&green),
+        );
     }
 }
 
