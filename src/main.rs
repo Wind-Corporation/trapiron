@@ -1,13 +1,13 @@
 #![feature(get_mut_unchecked)]
 
-use crate::gui::Drawable3;
+use crate::gui::Drawable;
 use glam::{Affine3A, Vec3};
 
 mod crash;
 mod gui;
 
 struct MyApplication {
-    rect: gui::Primitive3,
+    rect: gui::Primitive,
     animation_start: Option<std::time::Instant>,
 }
 
@@ -21,24 +21,24 @@ impl MyApplication {
 
         Self {
             rect: gui
-                .make_primitive3(
+                .make_primitive(
                     &[
-                        gui::Vertex3 {
+                        gui::Vertex {
                             position: [-0.5, 0.5, 0.0],
                             color_multiplier: [1.0, 1.0, 1.0],
                             texture_coords: [0.0, 1.0],
                         },
-                        gui::Vertex3 {
+                        gui::Vertex {
                             position: [-0.5, -0.5, 0.0],
                             color_multiplier: [1.0, 1.0, 1.0],
                             texture_coords: [0.0, 0.0],
                         },
-                        gui::Vertex3 {
+                        gui::Vertex {
                             position: [0.5, 0.5, 0.0],
                             color_multiplier: [1.0, 1.0, 1.0],
                             texture_coords: [1.0, 1.0],
                         },
-                        gui::Vertex3 {
+                        gui::Vertex {
                             position: [0.5, -0.5, 0.0],
                             color_multiplier: [1.0, 1.0, 1.0],
                             texture_coords: [1.0, 0.0],
@@ -53,7 +53,7 @@ impl MyApplication {
     }
 }
 
-fn draw_bouncy(object: &mut impl gui::Drawable3, t: f32, dcf: &mut gui::Dcf3) {
+fn draw_bouncy(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
     // Move in screen space
     let mut dcf = dcf.shifted(Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0));
     object.draw(&mut dcf.colored(&gui::OpaqueColor::rgb(Vec3::splat(0.1))));
