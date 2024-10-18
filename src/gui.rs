@@ -67,7 +67,7 @@ impl Gui {
 ///
 /// A single instance of this object exists while a frame is being rendered.
 ///
-/// Use [`DrawContext::start_2`] or [`DrawContext::start_3`] to obtain a `Dcf` that can be used
+/// Use [`DrawContext::start_3`] to obtain a `Dcf` that can be used
 /// for draw calls.
 pub struct DrawContext<'a> {
     /// The [`Gui`] instance.
@@ -81,20 +81,9 @@ pub struct DrawContext<'a> {
 }
 
 impl<'a> DrawContext<'a> {
-    /// Begins drawing operations in 2D.
-    ///
-    /// Creates the first `Dcf2` that will serve as the basis for the 2D draw state stack. After it
-    /// is dropped, all changes to the drawing environment will be reset.
-    pub fn start_2<'b>(&'b mut self) -> Dcf2<'b, 'a> {
-        Dcf2 {
-            ctxt: self,
-            state: Default::default(),
-        }
-    }
-
     /// Begins drawing operations in 3D.
     ///
-    /// Creates the first `Dcf2` that will serve as the basis for the 3D draw state stack. After it
+    /// Creates the first `Dcf3` that will serve as the basis for the 3D draw state stack. After it
     /// is dropped, all changes to the drawing environment will be reset.
     pub fn start_3<'b>(&'b mut self) -> Dcf3<'b, 'a> {
         Dcf3 {
@@ -143,18 +132,6 @@ impl Default for DcState3 {
         }
     }
 }
-
-/// Mutable state used by drawing operations in 2D contexts.
-///
-/// See [`Dcf2`].
-#[derive(Clone, Default)]
-pub struct DcState2 {
-    /// The transform from model coordinates to canvas coordinates, i.e. the position, scale and
-    /// rotation of a `Primitive2` in the canvas coordinate system.
-    pub transform: glam::Affine2,
-}
-
-impl DcState for DcState2 {}
 
 /// A proxy for draw calls available to [`Drawable`].
 ///
@@ -253,25 +230,13 @@ impl<'a, 'b> Dcf3<'a, 'b> {
     }
 }
 
-/// A `Dcf` for 2D contexts.
-pub type Dcf2<'a, 'b> = Dcf<'a, 'b, DcState2>;
-
-impl<'a, 'b> Dcf2<'a, 'b> {
-    /// Returns a frame the applies `transform` before the rest of this frame's transform.
-    ///
-    /// See [`Dcf2::apply`] for details.
-    pub fn tfed<'c>(&'c mut self, transform: glam::Affine2) -> Dcf2<'c, 'b> {
-        self.apply(|s| s.transform *= transform)
-    }
-}
-
 /// Something that can be rendered.
 ///
-/// For custom types, implement [`Drawable2`] or [`Drawable3`] as appropriate.
+/// For custom types, implement or [`Drawable3`] as appropriate.
 pub trait Drawable<T: DcState> {
     /// Draws this object using the provided draw context frame.
     ///
-    /// This is a wrapper for [`Drawable3::draw`] or [`Drawable2::draw`] as appropriate.
+    /// This is a wrapper for [`Drawable3::draw`] or as appropriate.
     fn draw_generic(&mut self, dcf: &mut Dcf<T>);
 }
 
@@ -286,21 +251,6 @@ where
     T: Drawable3,
 {
     fn draw_generic(&mut self, dcf: &mut Dcf3) {
-        self.draw(dcf);
-    }
-}
-
-/// Something that can be rendered in a 2D context.
-pub trait Drawable2 {
-    /// Draws this object using the provided draw context frame.
-    fn draw(&mut self, dcf: &mut Dcf2);
-}
-
-impl<T> Drawable<DcState2> for T
-where
-    T: Drawable2,
-{
-    fn draw_generic(&mut self, dcf: &mut Dcf2) {
         self.draw(dcf);
     }
 }
@@ -356,27 +306,6 @@ pub struct Vertex3 {
     pub texture_coords: [Float; 2],
 }
 
-/// A vertex of a 2D [`Primitive2`].
-#[derive(Copy, Clone)]
-pub struct Vertex2 {
-    /// The position (XYZ) of this vertex in its model's frame of reference.
-    pub position: [Float; 2],
-
-    /// The multiplicative color filter associated with this vertex.
-    ///
-    /// This is an RGBA vector with values in range `[0; 1]` for each component.
-    ///
-    /// If a texture is active, the color vector extracted from the texture is multiplied
-    /// component-wise with this vector. If no texture is bound, this color is used without
-    /// modification instead. The filter is interpolated linearly between vertices.
-    pub color_multiplier: [Float; 4],
-
-    /// The coordinates in texture space associated with this vertex (the UV-mapping of the vertex).
-    ///
-    /// This value is ignored when no texture is used.
-    pub texture_coords: [Float; 2],
-}
-
 /// The simplest 3D object that can be drawn to the screen directly.
 ///
 /// A Primitive3 is a collection of vertices, connected into triangles according to an vertex index
@@ -385,18 +314,6 @@ pub struct Primitive3(backend::Primitive3);
 
 impl Drawable3 for Primitive3 {
     fn draw(&mut self, dcf: &mut Dcf3) {
-        self.0.draw(dcf);
-    }
-}
-
-/// The simplest 2D object that can be drawn to the screen directly.
-///
-/// A Primitive2 is a collection of vertices, connected into triangles according to an vertex index
-/// list, that has a set textures associated with it.
-pub struct Primitive2(backend::Primitive2);
-
-impl Drawable2 for Primitive2 {
-    fn draw(&mut self, dcf: &mut Dcf2) {
         self.0.draw(dcf);
     }
 }
@@ -426,16 +343,6 @@ impl Gui {
         texture: Rc<Texture>,
     ) -> Result<Primitive3, PrimitiveError> {
         self.backend.make_primitive3(vertices, indices, texture)
-    }
-
-    /// Creates a new [2D graphics primitive](Primitive2) from raw components.
-    pub fn make_primitive2(
-        &mut self,
-        vertices: &[Vertex2],
-        indices: &[Index],
-        texture: Rc<Texture>,
-    ) -> Result<Primitive2, PrimitiveError> {
-        self.backend.make_primitive2(vertices, indices, texture)
     }
 }
 
