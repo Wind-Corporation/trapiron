@@ -67,8 +67,7 @@ impl Gui {
 ///
 /// A single instance of this object exists while a frame is being rendered.
 ///
-/// Use [`DrawContext::start_3`] to obtain a `Dcf` that can be used
-/// for draw calls.
+/// Use [`DrawContext::start_3`] to obtain a `Dcf3` that can be used for draw calls.
 pub struct DrawContext<'a> {
     /// The [`Gui`] instance.
     gui: &'a mut Gui,
@@ -103,8 +102,6 @@ impl<'a> DrawContext<'a> {
     }
 }
 
-pub trait DcState: Clone {}
-
 /// Mutable state used by drawing operations in 3D contexts.
 ///
 /// See [`Dcf3`].
@@ -122,8 +119,6 @@ pub struct DcState3 {
     pub color_multiplier: OpaqueColor,
 }
 
-impl DcState for DcState3 {}
-
 impl Default for DcState3 {
     fn default() -> Self {
         Self {
@@ -133,24 +128,24 @@ impl Default for DcState3 {
     }
 }
 
-/// A proxy for draw calls available to [`Drawable`].
+/// A proxy for draw calls available to [`Drawable3`].
 ///
-/// Each instance a `Dcf` corresponds to particular immutable settings for drawing operations,
-/// stored in a [`DcState`]. This data is primarily used by _PrimitiveN::draw_, but it is also
-/// accessible via [`Dcf::state`].
+/// Each instance a `Dcf3` corresponds to particular immutable settings for drawing operations,
+/// stored in a [`DcState3`]. This data is primarily used by _PrimitiveN::draw_, but it is also
+/// accessible via [`Dcf3::state`].
 ///
-/// `Dcf` values are immutable, but a child frame with mutated state can be created. This
+/// `Dcf3` values are immutable, but a child frame with mutated state can be created. This
 /// corresponds to pushing a frame onto the state stack. The child frame will restore settings by
-/// popping a single `DcState` off of the stack when it is dropped.
+/// popping a single `DcState3` off of the stack when it is dropped.
 ///
 /// The name stands for _Draw Context Frame_, referring to frames of the state stack.
 ///
-/// To prevent confusion, using a `Dcf` that does not represent the top of the state stack is
+/// To prevent confusion, using a `Dcf3` that does not represent the top of the state stack is
 /// disallowed at compile time.
-pub struct Dcf<'a, 'b, S: DcState> {
+pub struct Dcf3<'a, 'b> {
     /// The underlying draw context that is "shared" between all frames.
     ///
-    /// The reference is owned by the `Dcf` at the top of the stack.
+    /// The reference is owned by the `Dcf3` at the top of the stack.
     ctxt: &'a mut DrawContext<'b>,
 
     /// The state of the frame.
@@ -158,24 +153,24 @@ pub struct Dcf<'a, 'b, S: DcState> {
     /// Psych! The state stack _is_ the call stack. Don't count on it, though: it is an
     /// implementation detail.
     ///
-    /// For a single `Dcf`, this is an immutable field.
-    state: S,
+    /// For a single `Dcf3`, this is an immutable field.
+    state: DcState3,
 }
 
-impl<'a, 'b, S: DcState> Dcf<'a, 'b, S> {
+impl<'a, 'b> Dcf3<'a, 'b> {
     /// Applies `func` to the state of this frame and pushes the result as a new frame.
     ///
     /// Does not alter the state associated with this frame; `func` is effectively undone when the
     /// returned value is dropped.
     ///
-    /// `func` should mutate the provided [`DcState`] in place; it is operating on a mutable copy.
-    pub fn apply<'c, F>(&'c mut self, func: F) -> Dcf<'c, 'b, S>
+    /// `func` should mutate the provided [`DcState3`] in place; it is operating on a mutable copy.
+    pub fn apply<'c, F>(&'c mut self, func: F) -> Dcf3<'c, 'b>
     where
-        F: FnOnce(&mut S),
+        F: FnOnce(&mut DcState3),
     {
         let mut state = self.state.clone();
         func(&mut state);
-        Dcf {
+        Dcf3 {
             ctxt: &mut self.ctxt,
             state,
         }
@@ -191,16 +186,11 @@ impl<'a, 'b, S: DcState> Dcf<'a, 'b, S> {
         self.ctxt.gui()
     }
 
-    /// Returns the immutable [`DcState`] of this draw context frame.
-    pub fn state(&self) -> &S {
+    /// Returns the immutable [`DcState3`] of this draw context frame.
+    pub fn state(&self) -> &DcState3 {
         &self.state
     }
-}
 
-/// A `Dcf` for 3D contexts.
-pub type Dcf3<'a, 'b> = Dcf<'a, 'b, DcState3>;
-
-impl<'a, 'b> Dcf3<'a, 'b> {
     /// In a new frame, applies the `transform` to _world transform_.
     ///
     /// See [`Dcf3::apply`] for details.
@@ -230,29 +220,10 @@ impl<'a, 'b> Dcf3<'a, 'b> {
     }
 }
 
-/// Something that can be rendered.
-///
-/// For custom types, implement or [`Drawable3`] as appropriate.
-pub trait Drawable<T: DcState> {
-    /// Draws this object using the provided draw context frame.
-    ///
-    /// This is a wrapper for [`Drawable3::draw`] or as appropriate.
-    fn draw_generic(&mut self, dcf: &mut Dcf<T>);
-}
-
 /// Something that can be rendered in a 3D context.
 pub trait Drawable3 {
     /// Draws this object using the provided draw context frame.
     fn draw(&mut self, dcf: &mut Dcf3);
-}
-
-impl<T> Drawable<DcState3> for T
-where
-    T: Drawable3,
-{
-    fn draw_generic(&mut self, dcf: &mut Dcf3) {
-        self.draw(dcf);
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
