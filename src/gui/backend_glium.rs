@@ -102,7 +102,7 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
             _phantom: std::marker::PhantomData,
         };
 
-        let mut ctxt = super::DrawContext {
+        let mut ctxt = super::draw::Context {
             gui,
             backend: ctxt,
             time: std::time::Instant::now(),

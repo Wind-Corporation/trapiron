@@ -4,8 +4,8 @@ use super::{backend, Gui, OpaqueColor};
 ///
 /// A single instance of this object exists while a frame is being rendered.
 ///
-/// Use [`DrawContext::start_3`] to obtain a `Dcf` that can be used for draw calls.
-pub struct DrawContext<'a> {
+/// Use [`Context::start_3`] to obtain a `Dcf` that can be used for draw calls.
+pub struct Context<'a> {
     /// The [`Gui`] instance.
     pub(crate) gui: &'a mut Gui,
 
@@ -16,7 +16,7 @@ pub struct DrawContext<'a> {
     pub(crate) time: std::time::Instant,
 }
 
-impl<'a> DrawContext<'a> {
+impl<'a> Context<'a> {
     /// Begins drawing operations in 3D.
     ///
     /// Creates the first `Dcf` that will serve as the basis for the 3D draw state stack. After it
@@ -43,7 +43,7 @@ impl<'a> DrawContext<'a> {
 ///
 /// See [`Dcf`].
 #[derive(Clone)]
-pub struct DcState {
+pub struct State {
     /// The transform from model coordinates to world coordinates, i.e. the position, scale and
     /// rotation of a `Primitive` relative to the distant light sources.
     ///
@@ -56,7 +56,7 @@ pub struct DcState {
     pub color_multiplier: OpaqueColor,
 }
 
-impl Default for DcState {
+impl Default for State {
     fn default() -> Self {
         Self {
             world_transform: glam::Affine3A::IDENTITY,
@@ -68,12 +68,12 @@ impl Default for DcState {
 /// A proxy for draw calls available to [`Drawable`].
 ///
 /// Each instance a `Dcf` corresponds to particular immutable settings for drawing operations,
-/// stored in a [`DcState`]. This data is primarily used by _PrimitiveN::draw_, but it is also
+/// stored in a [`State`]. This data is primarily used by _PrimitiveN::draw_, but it is also
 /// accessible via [`Dcf::state`].
 ///
 /// `Dcf` values are immutable, but a child frame with mutated state can be created. This
 /// corresponds to pushing a frame onto the state stack. The child frame will restore settings by
-/// popping a single `DcState` off of the stack when it is dropped.
+/// popping a single `State` off of the stack when it is dropped.
 ///
 /// The name stands for _Draw Context Frame_, referring to frames of the state stack.
 ///
@@ -83,7 +83,7 @@ pub struct Dcf<'a, 'b> {
     /// The underlying draw context that is "shared" between all frames.
     ///
     /// The reference is owned by the `Dcf` at the top of the stack.
-    pub ctxt: &'a mut DrawContext<'b>,
+    pub ctxt: &'a mut Context<'b>,
 
     /// The state of the frame.
     ///
@@ -91,7 +91,7 @@ pub struct Dcf<'a, 'b> {
     /// implementation detail.
     ///
     /// For a single `Dcf`, this is an immutable field.
-    state: DcState,
+    state: State,
 }
 
 impl<'a, 'b> Dcf<'a, 'b> {
@@ -100,10 +100,10 @@ impl<'a, 'b> Dcf<'a, 'b> {
     /// Does not alter the state associated with this frame; `func` is effectively undone when the
     /// returned value is dropped.
     ///
-    /// `func` should mutate the provided [`DcState`] in place; it is operating on a mutable copy.
+    /// `func` should mutate the provided [`State`] in place; it is operating on a mutable copy.
     pub fn apply<'c, F>(&'c mut self, func: F) -> Dcf<'c, 'b>
     where
-        F: FnOnce(&mut DcState),
+        F: FnOnce(&mut State),
     {
         let mut state = self.state.clone();
         func(&mut state);
@@ -123,8 +123,8 @@ impl<'a, 'b> Dcf<'a, 'b> {
         self.ctxt.gui()
     }
 
-    /// Returns the immutable [`DcState`] of this draw context frame.
-    pub fn state(&self) -> &DcState {
+    /// Returns the immutable [`State`] of this draw context frame.
+    pub fn state(&self) -> &State {
         &self.state
     }
 

@@ -67,7 +67,7 @@ fn draw_bouncy(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
 }
 
 impl gui::Application for MyApplication {
-    fn draw(&mut self, ctxt: &mut gui::DrawContext) {
+    fn draw(&mut self, ctxt: &mut gui::draw::Context) {
         let mut dcf = ctxt.start_3();
 
         let t = self.animation_start.get_or_insert(*dcf.time());

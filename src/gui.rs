@@ -64,8 +64,7 @@ impl Gui {
 //
 
 pub mod draw;
-
-pub use draw::{DcState, Dcf, DrawContext, Drawable};
+pub use draw::{Dcf, Drawable};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Application
@@ -82,7 +81,7 @@ pub use draw::{DcState, Dcf, DrawContext, Drawable};
 /// ## See also
 /// backend::run
 pub trait Application {
-    fn draw(&mut self, dcf: &mut DrawContext);
+    fn draw(&mut self, dcf: &mut draw::Context);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
