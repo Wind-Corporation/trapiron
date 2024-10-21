@@ -22,7 +22,7 @@ type WindowDisplay = glium::Display<glium::glutin::surface::WindowSurface>;
 /// All interactions with Gui objects must happen in main application thread.
 pub struct Gui {
     /// OpenGL program for 3D visuals with lighting support.
-    program_3d: glium::Program,
+    program: glium::Program,
 
     /// The [`glium::Display`] instance of the main window that may be used for OpenGL operations.
     display: WindowDisplay,
@@ -47,16 +47,16 @@ impl Gui {
             .with_title("Trapiron")
             .build(event_loop);
 
-        let program_3d = glium::Program::from_source(
+        let program = glium::Program::from_source(
             &display,
-            include_str!("vertex_3d.glsl"),
-            include_str!("fragment_3d.glsl"),
+            include_str!("backend_glium/shader/vertex.glsl"),
+            include_str!("backend_glium/shader/fragment.glsl"),
             None,
         )
         .expect("Could not create GLSL shared program");
 
         super::Gui::from(Self {
-            program_3d,
+            program,
             display,
             window,
         })
@@ -152,7 +152,7 @@ impl super::Drawable for Primitive {
             .draw(
                 &self.vertices,
                 &self.indices,
-                &dcf.ctxt.gui.backend.program_3d,
+                &dcf.ctxt.gui.backend.program,
                 &uniforms,
                 &Default::default(),
             )
