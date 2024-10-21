@@ -1,6 +1,5 @@
 #![feature(get_mut_unchecked)]
 
-use crate::gui::Drawable;
 use glam::{Affine3A, Vec3};
 
 mod crash;
