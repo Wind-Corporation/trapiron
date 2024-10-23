@@ -7,13 +7,13 @@ use super::{backend, Gui, OpaqueColor};
 /// Use [`Context::start_3`] to obtain a `Dcf` that can be used for draw calls.
 pub struct Context<'a> {
     /// The [`Gui`] instance.
-    pub(crate) gui: &'a mut Gui,
+    pub(super) gui: &'a mut Gui,
 
     /// The implementation provided by the backend.
-    pub(crate) backend: backend::DrawContext<'a>,
+    pub(super) backend: backend::DrawContext<'a>,
 
     /// The time moment that draw logic should use for this frame.
-    pub(crate) time: std::time::Instant,
+    pub(super) time: std::time::Instant,
 }
 
 impl<'a> Context<'a> {
