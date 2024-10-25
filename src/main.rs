@@ -2,8 +2,8 @@
 
 use glam::Vec3;
 
-mod crash;
-mod gui;
+pub mod crash;
+pub mod gui;
 
 struct MyApplication {
     rect: gui::Primitive,

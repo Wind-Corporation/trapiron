@@ -1,6 +1,6 @@
 //! GUI backend based on Glium for Linux (X11, Wayland), Windows and MacOS.
 //!
-//! Do not use path `gui::backend_glium` unless writing code that speicifically requires this
+//! Do not use path `gui::backend_glium` unless writing code that specifically requires this
 //! backend. Use `gui::*` wrappers, or use `gui::backend` when implementing these wrappers.
 
 use super::{Index, Vertex};

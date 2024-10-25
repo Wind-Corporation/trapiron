@@ -1,4 +1,15 @@
-use super::{backend, Gui, OpaqueColor};
+//! Drawing context and other concepts for graphical output.
+//!
+//! ## Object heirarchy
+//! - [`Dcf`]: The user-facing drawing API and a RAII configurator of volatile drawing parameters.
+//!   - [`State`]: Volatile drawing parameters such world transform.
+//!   - [`Context`]: A hidden container for rarely changed render settings and resources.
+//!     - [`Gui`]
+//!     - [`backend::DrawContext`](super::backend::DrawContext): Backend-specific container of
+//!       render resources.
+
+use super::{Gui, OpaqueColor};
+use glam::{Affine3A, Vec3};
 
 /// An active render operation.
 ///
@@ -8,13 +19,13 @@ pub(super) struct Context<'a> {
     pub gui: &'a mut Gui,
 
     /// The implementation provided by the backend.
-    pub backend: backend::DrawContext<'a>,
+    pub backend: super::backend::DrawContext<'a>,
 
     /// The time moment that draw logic should use for this frame.
     pub time: std::time::Instant,
 }
 
-/// Mutable state used by drawing operations in 3D contexts.
+/// Mutable state used by drawing operations.
 ///
 /// See [`Dcf`].
 #[derive(Clone)]
@@ -23,7 +34,7 @@ pub struct State {
     /// rotation of a `Primitive` relative to the distant light sources.
     ///
     /// This value is used for lighting computations.
-    pub world_transform: glam::Affine3A,
+    pub world_transform: Affine3A,
 
     /// A global color multiplier.
     ///
@@ -34,8 +45,8 @@ pub struct State {
 impl Default for State {
     fn default() -> Self {
         Self {
-            world_transform: glam::Affine3A::IDENTITY,
-            color_multiplier: OpaqueColor::rgb(glam::Vec3::splat(1.0)),
+            world_transform: Affine3A::IDENTITY,
+            color_multiplier: OpaqueColor::rgb(Vec3::splat(1.0)),
         }
     }
 }
@@ -43,8 +54,8 @@ impl Default for State {
 /// A proxy for draw calls available to [`Drawable`].
 ///
 /// Each instance a `Dcf` corresponds to particular immutable settings for drawing operations,
-/// stored in a [`State`]. This data is primarily used by _PrimitiveN::draw_, but it is also
-/// accessible via [`Dcf::state`].
+/// stored in a [`State`]. This data is primarily used by
+/// [`Primitive::draw`](super::Primitive::draw), but it is also accessible via [`Dcf::state`].
 ///
 /// `Dcf` values are immutable, but a child frame with mutated state can be created. This
 /// corresponds to pushing a frame onto the state stack. The child frame will restore settings by
@@ -106,22 +117,22 @@ impl<'a, 'b> Dcf<'a, 'b> {
     /// In a new frame, applies the `transform` to _world transform_.
     ///
     /// See [`Dcf::apply`] for details.
-    pub fn tfed<'c>(&'c mut self, transform: glam::Affine3A) -> Dcf<'c, 'b> {
+    pub fn tfed<'c>(&'c mut self, transform: Affine3A) -> Dcf<'c, 'b> {
         self.apply(|s| s.world_transform *= transform)
     }
 
     /// In a new frame, applies a translation such that (0; 0; 0) maps to `new_zero` in this frame.
     ///
     /// See [`Dcf::apply`] for details.
-    pub fn shifted<'c>(&'c mut self, new_zero: glam::Vec3) -> Dcf<'c, 'b> {
-        self.tfed(glam::Affine3A::from_translation(new_zero))
+    pub fn shifted<'c>(&'c mut self, new_zero: Vec3) -> Dcf<'c, 'b> {
+        self.tfed(Affine3A::from_translation(new_zero))
     }
 
     /// In a new frame, scales such that a unit cube has dimentions `new_units` in this frame.
     ///
     /// See [`Dcf::apply`] for details.
-    pub fn scaled<'c>(&'c mut self, new_units: glam::Vec3) -> Dcf<'c, 'b> {
-        self.tfed(glam::Affine3A::from_scale(new_units))
+    pub fn scaled<'c>(&'c mut self, new_units: Vec3) -> Dcf<'c, 'b> {
+        self.tfed(Affine3A::from_scale(new_units))
     }
 
     /// In a new frame, applies an additional color multiplier filter to rendered primitives.
@@ -140,7 +151,7 @@ impl<'a, 'b> Dcf<'a, 'b> {
     }
 }
 
-/// Something that can be rendered in a 3D context.
+/// Something that can be rendered onto the screen.
 pub trait Drawable {
     /// Draws this object using the provided draw context frame.
     fn draw(&mut self, dcf: &mut Dcf);

@@ -94,7 +94,7 @@ pub type Float = f32;
 /// The current choice of `u16` limits the vertex arrays to a length of 65535.
 pub type Index = u16;
 
-/// A vertex of a 3D [`Primitive`].
+/// A vertex of a [`Primitive`].
 #[derive(Copy, Clone)]
 pub struct Vertex {
     /// The position (XYZ) of this vertex in its model's frame of reference.
