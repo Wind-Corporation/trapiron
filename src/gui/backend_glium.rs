@@ -109,7 +109,7 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
         };
 
         ctxt.backend.target.clear_color(0.0, 0.0, 0.0, 1.0);
-        app.draw(&mut ctxt);
+        app.draw(&mut super::Dcf::new(&mut ctxt));
         ctxt.backend
             .target
             .finish()

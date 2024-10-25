@@ -1,6 +1,6 @@
 #![feature(get_mut_unchecked)]
 
-use glam::{Affine3A, Vec3};
+use glam::Vec3;
 
 mod crash;
 mod gui;
@@ -66,10 +66,10 @@ fn draw_bouncy(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
     object.draw(&mut dcf);
 }
 
-impl gui::Application for MyApplication {
-    fn draw(&mut self, ctxt: &mut gui::draw::Context) {
-        let mut dcf = ctxt.start_3();
+impl gui::Application for MyApplication {}
 
+impl gui::Drawable for MyApplication {
+    fn draw(&mut self, dcf: &mut gui::Dcf) {
         let t = self.animation_start.get_or_insert(*dcf.time());
         let t = (*dcf.time() - *t).as_secs_f32();
 
@@ -77,7 +77,7 @@ impl gui::Application for MyApplication {
         let green = gui::OpaqueColor::rgb(Vec3::new(0.05, 0.8, 0.1));
 
         draw_bouncy(&mut self.rect, -t, &mut dcf.colored(&blue));
-        draw_bouncy(&mut self.rect, t, &mut dcf);
+        draw_bouncy(&mut self.rect, t, dcf);
         draw_bouncy(
             &mut self.rect,
             t * 5.0,

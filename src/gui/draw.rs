@@ -3,40 +3,15 @@ use super::{backend, Gui, OpaqueColor};
 /// An active render operation.
 ///
 /// A single instance of this object exists while a frame is being rendered.
-///
-/// Use [`Context::start_3`] to obtain a `Dcf` that can be used for draw calls.
-pub struct Context<'a> {
+pub(super) struct Context<'a> {
     /// The [`Gui`] instance.
-    pub(super) gui: &'a mut Gui,
+    pub gui: &'a mut Gui,
 
     /// The implementation provided by the backend.
-    pub(super) backend: backend::DrawContext<'a>,
+    pub backend: backend::DrawContext<'a>,
 
     /// The time moment that draw logic should use for this frame.
-    pub(super) time: std::time::Instant,
-}
-
-impl<'a> Context<'a> {
-    /// Begins drawing operations in 3D.
-    ///
-    /// Creates the first `Dcf` that will serve as the basis for the 3D draw state stack. After it
-    /// is dropped, all changes to the drawing environment will be reset.
-    pub fn start_3<'b>(&'b mut self) -> Dcf<'b, 'a> {
-        Dcf {
-            ctxt: self,
-            state: Default::default(),
-        }
-    }
-
-    /// Returns the time instant that draw logic should use.
-    pub fn time(&self) -> &std::time::Instant {
-        &self.time
-    }
-
-    /// Returns a reference to the [`Gui`] instance.
-    pub fn gui(&mut self) -> &mut Gui {
-        self.gui
-    }
+    pub time: std::time::Instant,
 }
 
 /// Mutable state used by drawing operations in 3D contexts.
@@ -115,12 +90,12 @@ impl<'a, 'b> Dcf<'a, 'b> {
 
     /// Returns the time instant that draw logic should use.
     pub fn time(&self) -> &std::time::Instant {
-        self.ctxt.time()
+        &self.ctxt.time
     }
 
     /// Returns a reference to the [`Gui`] instance.
     pub fn gui(&mut self) -> &mut Gui {
-        self.ctxt.gui()
+        &mut self.ctxt.gui
     }
 
     /// Returns the immutable [`State`] of this draw context frame.
@@ -154,6 +129,14 @@ impl<'a, 'b> Dcf<'a, 'b> {
     /// See [`Dcf::apply`] for details.
     pub fn colored<'c>(&'c mut self, filter: &OpaqueColor) -> Dcf<'c, 'b> {
         self.apply(|s| s.color_multiplier.0 *= filter.0)
+    }
+
+    /// Creates the first frame from a raw [`Context`].
+    pub(super) fn new(ctxt: &'a mut Context<'b>) -> Self {
+        Self {
+            ctxt,
+            state: Default::default(),
+        }
     }
 }
 

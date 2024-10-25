@@ -80,9 +80,7 @@ pub use draw::{Dcf, Drawable};
 ///
 /// ## See also
 /// backend::run
-pub trait Application {
-    fn draw(&mut self, dcf: &mut draw::Context);
-}
+pub trait Application: draw::Drawable {}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Primitives
