@@ -1,6 +1,6 @@
 #![feature(get_mut_unchecked)]
 
-use glam::Vec3;
+use glam::{Affine3A, Vec3};
 
 pub mod crash;
 pub mod gui;
@@ -52,45 +52,28 @@ impl MyApplication {
     }
 }
 
-fn draw_bouncy(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
-    // Move in screen space
-    let mut dcf = dcf.shifted(Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0));
-    object.draw(&mut dcf.colored(&gui::OpaqueColor::rgb(Vec3::splat(0.1))));
-
-    // Slow pulsing
-    let mut dcf = dcf.scaled(Vec3::splat((t * 2.3).sin() * 0.3 + 0.7));
-    object.draw(&mut dcf.colored(&gui::OpaqueColor::rgb(Vec3::splat(0.3))));
-
-    // Fast wobble (demonstrates that move is not influenced by scale)
-    let mut dcf = dcf.scaled(Vec3::new((t * 20.0).sin() * 0.1 + 0.9, 1.0, 1.0));
-    object.draw(&mut dcf);
+fn draw_spinning(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
+    object.draw(&mut dcf.tfed(Affine3A::from_rotation_y(t)).shifted(Vec3::X));
 }
 
 impl gui::Application for MyApplication {}
 
 impl gui::Drawable for MyApplication {
     fn draw(&mut self, dcf: &mut gui::Dcf) {
+        let old_settings = dcf.settings();
+        let new_settings = old_settings.clone();
+        // new_settings
+        dcf.set_settings(new_settings);
+
         let t = self.animation_start.get_or_insert(*dcf.time());
         let t = (*dcf.time() - *t).as_secs_f32();
 
         let blue = gui::OpaqueColor::rgb(Vec3::new(0.0, 0.1, 0.9));
         let green = gui::OpaqueColor::rgb(Vec3::new(0.05, 0.8, 0.1));
 
-        draw_bouncy(&mut self.rect, -t, &mut dcf.colored(&blue));
-        draw_bouncy(&mut self.rect, t, dcf);
-        draw_bouncy(
-            &mut self.rect,
-            t * 5.0,
-            &mut dcf
-                .shifted(Vec3::new(0.9, 0.9, 0.0))
-                .scaled(Vec3::splat(0.1))
-                .colored(&green),
-        );
-
-        // Look mum! I'm changing draw settings!
-        let old_settings = dcf.settings();
-        let new_settings = old_settings.clone(); // Whoops, there are no settings to change :(
-        dcf.set_settings(new_settings);
+        draw_spinning(&mut self.rect, t * 1.0, &mut dcf.colored(&blue));
+        draw_spinning(&mut self.rect, t * 1.5, dcf);
+        draw_spinning(&mut self.rect, t * 0.8, &mut dcf.colored(&green));
     }
 }
 
