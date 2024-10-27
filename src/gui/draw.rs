@@ -23,9 +23,17 @@ pub(super) struct Context<'a> {
 
     /// The time moment that draw logic should use for this frame.
     pub time: std::time::Instant,
+
+    /// The current render settings.
+    ///
+    /// May infrequently change during one frame render.
+    pub settings: Settings,
 }
 
 /// Mutable state used by drawing operations.
+///
+/// Unlike [`Settings`], these parameters are expected to change frequently while a single frame is
+/// rendered.
 ///
 /// See [`Dcf`].
 #[derive(Clone)]
@@ -69,7 +77,7 @@ pub struct Dcf<'a, 'b> {
     /// The underlying draw context that is "shared" between all frames.
     ///
     /// The reference is owned by the `Dcf` at the top of the stack.
-    pub ctxt: &'a mut Context<'b>,
+    pub(super) ctxt: &'a mut Context<'b>,
 
     /// The state of the frame.
     ///
@@ -114,6 +122,23 @@ impl<'a, 'b> Dcf<'a, 'b> {
         &self.state
     }
 
+    /// Returns a reference to the current [settings](Settings) associated with the underlying
+    /// render context.
+    ///
+    /// Note that unlike [`State`], a single [`Settings`] value is shared by every `Dcf` during
+    /// a single frame render.
+    pub fn settings(&self) -> &Settings {
+        &self.ctxt.settings
+    }
+
+    /// Changes the current [settings](Settings) associated with the underlying render context.
+    ///
+    /// Note that unlike [`State`], a single [`Settings`] value is shared by every `Dcf` during
+    /// a single frame render.
+    pub fn set_settings(&mut self, new_settings: Settings) {
+        self.ctxt.settings = new_settings;
+    }
+
     /// In a new frame, applies the `transform` to _world transform_.
     ///
     /// See [`Dcf::apply`] for details.
@@ -149,6 +174,15 @@ impl<'a, 'b> Dcf<'a, 'b> {
             state: Default::default(),
         }
     }
+}
+
+/// Mostly static parameters used by drawing operations.
+///
+/// Unlike [`State`], these values are expected to mostly stay constant while a single frame is
+/// rendered, though they may change once or twice.
+#[derive(Clone, Default)]
+pub struct Settings {
+    // Empty for now; will contain view transform and lighting settings.
 }
 
 /// Something that can be rendered onto the screen.

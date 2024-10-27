@@ -86,6 +86,11 @@ impl gui::Drawable for MyApplication {
                 .scaled(Vec3::splat(0.1))
                 .colored(&green),
         );
+
+        // Look mum! I'm changing draw settings!
+        let old_settings = dcf.settings();
+        let new_settings = old_settings.clone(); // Whoops, there are no settings to change :(
+        dcf.set_settings(new_settings);
     }
 }
 

@@ -106,6 +106,7 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
             gui,
             backend: ctxt,
             time: std::time::Instant::now(),
+            settings: Default::default(),
         };
 
         ctxt.backend.target.clear_color(0.0, 0.0, 0.0, 1.0);
