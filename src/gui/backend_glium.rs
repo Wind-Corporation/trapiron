@@ -109,7 +109,9 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
             settings: Default::default(),
         };
 
-        ctxt.backend.target.clear_color(0.0, 0.0, 0.0, 1.0);
+        ctxt.backend
+            .target
+            .clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
         app.draw(&mut super::Dcf::new(&mut ctxt));
         ctxt.backend
             .target
@@ -149,6 +151,15 @@ impl super::Drawable for Primitive {
             tex: sampler,
         };
 
+        let params = glium::DrawParameters {
+            depth: glium::Depth {
+                test: glium::draw_parameters::DepthTest::IfLess,
+                write: true,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
         dcf.ctxt
             .backend
             .target
@@ -157,7 +168,7 @@ impl super::Drawable for Primitive {
                 &self.indices,
                 &dcf.ctxt.gui.backend.program,
                 &uniforms,
-                &Default::default(),
+                &params,
             )
             .unwrap();
     }
