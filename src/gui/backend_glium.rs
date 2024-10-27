@@ -142,6 +142,8 @@ impl super::Drawable for Primitive {
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
 
         let uniforms = glium::uniform! {
+            screen_transform: dcf.settings().screen_transform.to_cols_array_2d(),
+            view_transform: dcf.settings().view_transform.to_cols_array_2d(),
             world_transform: dcf.state().world_transform.to_cols_array_2d(),
             color_multiplier_global: dcf.state().color_multiplier.0.to_array(),
             tex: sampler,

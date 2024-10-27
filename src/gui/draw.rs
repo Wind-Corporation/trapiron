@@ -9,7 +9,7 @@
 //!       render resources.
 
 use super::{Gui, OpaqueColor};
-use glam::{Affine3A, Vec3};
+use glam::{Affine3A, Mat4, Vec3};
 
 /// An active render operation.
 ///
@@ -182,7 +182,17 @@ impl<'a, 'b> Dcf<'a, 'b> {
 /// rendered, though they may change once or twice.
 #[derive(Clone, Default)]
 pub struct Settings {
-    // Empty for now; will contain view transform and lighting settings.
+    /// The transform from world coordinates to view coordinates.
+    ///
+    /// The inverse of the camera pose. This value is ignored for lighting computations.
+    pub view_transform: Affine3A,
+
+    /// The transform from view coordinates to screen coordinates; normally an orthographic or a
+    /// perspective projection.
+    ///
+    /// Transforms 3D camera-centric coordinates to 2D screen-based normalized coordinates in the
+    /// [-1;+1] range for X and Y.
+    pub screen_transform: Mat4,
 }
 
 /// Something that can be rendered onto the screen.

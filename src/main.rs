@@ -1,6 +1,6 @@
 #![feature(get_mut_unchecked)]
 
-use glam::{Affine3A, Vec3};
+use glam::{Affine3A, Mat4, Vec3};
 
 pub mod crash;
 pub mod gui;
@@ -60,9 +60,13 @@ impl gui::Application for MyApplication {}
 
 impl gui::Drawable for MyApplication {
     fn draw(&mut self, dcf: &mut gui::Dcf) {
-        let old_settings = dcf.settings();
-        let new_settings = old_settings.clone();
-        // new_settings
+        let mut new_settings = dcf.settings().clone();
+
+        new_settings.view_transform =
+            Affine3A::look_at_lh(Vec3::new(0f32, 0f32, -5f32), Vec3::ZERO, Vec3::Y);
+        new_settings.screen_transform =
+            Mat4::perspective_lh(std::f32::consts::PI / 2.5, 1f32, 0.01f32, 100f32);
+
         dcf.set_settings(new_settings);
 
         let t = self.animation_start.get_or_insert(*dcf.time());
