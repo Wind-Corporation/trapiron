@@ -112,6 +112,14 @@ impl<'a, 'b> Dcf<'a, 'b> {
         }
     }
 
+    /// Ensures that previous draw operations do not interfere with future requests due to depth
+    /// testing.
+    ///
+    /// The effect of this command is not limited to this [`Dcf`] value.
+    pub fn start_next_layer(&mut self) {
+        // TODO: relay request to backend (clear depth buffer? increase depth padding?)
+    }
+
     /// Returns the time instant that draw logic should use.
     pub fn time(&self) -> &std::time::Instant {
         &self.ctxt.time

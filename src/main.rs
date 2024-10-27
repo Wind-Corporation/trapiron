@@ -70,6 +70,8 @@ impl gui::Application for MyApplication {}
 
 impl gui::Drawable for MyApplication {
     fn draw(&mut self, dcf: &mut gui::Dcf) {
+        // Draw 3D scene
+
         let mut new_settings = dcf.settings().clone();
 
         let fov = 75f32.to_radians();
@@ -89,6 +91,24 @@ impl gui::Drawable for MyApplication {
         draw_spinning(&mut self.rect, t * 1.0, &mut dcf.colored(&blue));
         draw_spinning(&mut self.rect, t * 1.5, dcf);
         draw_spinning(&mut self.rect, t * 0.8, &mut dcf.colored(&green));
+
+        // Draw 2D overlay
+
+        dcf.start_next_layer();
+
+        let mut new_settings = dcf.settings().clone();
+
+        new_settings.screen_transform =
+            Mat4::orthographic_lh(0.0, dcf.size().x, 0.0, dcf.size().y, 0.0, 1.0);
+        new_settings.view_transform = Affine3A::IDENTITY;
+
+        dcf.set_settings(new_settings);
+
+        self.rect.draw(
+            &mut dcf
+                .shifted(Vec3::new(48.0, 48.0, 0.0))
+                .scaled(Vec3::splat(48.0 * 2.0)),
+        );
     }
 }
 
