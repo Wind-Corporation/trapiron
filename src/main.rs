@@ -53,7 +53,17 @@ impl MyApplication {
 }
 
 fn draw_spinning(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
-    object.draw(&mut dcf.tfed(Affine3A::from_rotation_y(t)).shifted(Vec3::X));
+    let dark = gui::OpaqueColor::rgb(Vec3::new(0.1, 0.1, 0.15));
+
+    let mut dcf = dcf.tfed(Affine3A::from_rotation_y(t));
+    let mut dcf = dcf.shifted(Vec3::X);
+
+    object.draw(&mut dcf);
+    object.draw(
+        &mut dcf
+            .tfed(Affine3A::from_rotation_y(180f32.to_radians()))
+            .colored(&dark),
+    );
 }
 
 impl gui::Application for MyApplication {}
