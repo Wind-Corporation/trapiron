@@ -62,10 +62,11 @@ impl gui::Drawable for MyApplication {
     fn draw(&mut self, dcf: &mut gui::Dcf) {
         let mut new_settings = dcf.settings().clone();
 
-        new_settings.view_transform =
-            Affine3A::look_at_lh(Vec3::new(0f32, 0f32, -5f32), Vec3::ZERO, Vec3::Y);
+        let fov = 75f32.to_radians();
         new_settings.screen_transform =
-            Mat4::perspective_lh(std::f32::consts::PI / 2.5, 1f32, 0.01f32, 100f32);
+            Mat4::perspective_lh(fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
+
+        new_settings.view_transform = Affine3A::look_at_lh(Vec3::Z * -2.5, Vec3::ZERO, Vec3::Y);
 
         dcf.set_settings(new_settings);
 

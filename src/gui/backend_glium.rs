@@ -97,6 +97,10 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
 
     let frame_number = gui.last_started_frame;
     crash::with_context(("Current frame", || frame_number), || {
+        let size = gui.backend.window.inner_size();
+        let scale = gui.backend.window.scale_factor() as f32;
+        let size = glam::Vec2::new(size.width as f32 / scale, size.height as f32 / scale);
+
         let ctxt = DrawContext {
             target: gui.backend.display.draw(),
             _phantom: std::marker::PhantomData,
@@ -105,6 +109,7 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
         let mut ctxt = super::draw::Context {
             gui,
             backend: ctxt,
+            size,
             time: std::time::Instant::now(),
             settings: Default::default(),
         };

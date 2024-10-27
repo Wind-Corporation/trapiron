@@ -9,7 +9,7 @@
 //!       render resources.
 
 use super::{Gui, OpaqueColor};
-use glam::{Affine3A, Mat4, Vec3};
+use glam::{Affine3A, Mat4, Vec2, Vec3};
 
 /// An active render operation.
 ///
@@ -20,6 +20,11 @@ pub(super) struct Context<'a> {
 
     /// The implementation provided by the backend.
     pub backend: super::backend::DrawContext<'a>,
+
+    /// The viewport size for this frame.
+    ///
+    /// See [`Dcf::size`] for a more specific definition.
+    pub size: Vec2,
 
     /// The time moment that draw logic should use for this frame.
     pub time: std::time::Instant,
@@ -110,6 +115,15 @@ impl<'a, 'b> Dcf<'a, 'b> {
     /// Returns the time instant that draw logic should use.
     pub fn time(&self) -> &std::time::Instant {
         &self.ctxt.time
+    }
+
+    /// Returns the size of the viewport in pixels that draw logic should use.
+    ///
+    /// Returns the size of the renderable area ("window client area", "clip space", "viewport")
+    /// measured in logical pixels (not necessarily physical display pixels). The dimensions are
+    /// positive but not necessarily integer values.
+    pub fn size(&self) -> Vec2 {
+        self.ctxt.size
     }
 
     /// Returns a reference to the [`Gui`] instance.
