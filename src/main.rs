@@ -66,6 +66,17 @@ fn draw_spinning(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
     );
 }
 
+fn remap_depth(new_min: gui::Float, new_max: gui::Float) -> Mat4 {
+    let mul = new_max - new_min;
+    let add = new_min;
+    Mat4::from_cols_array_2d(&[
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, mul, 0.0],
+        [0.0, 0.0, add, 1.0],
+    ])
+}
+
 impl gui::Application for MyApplication {}
 
 impl gui::Drawable for MyApplication {
@@ -75,8 +86,8 @@ impl gui::Drawable for MyApplication {
         let mut new_settings = dcf.settings().clone();
 
         let fov = 75f32.to_radians();
-        new_settings.screen_transform =
-            Mat4::perspective_lh(fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
+        new_settings.screen_transform = remap_depth(0.1, 1.0) // takes up Z values 1.0 -> 0.1
+            * Mat4::perspective_lh(fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
 
         new_settings.view_transform = Affine3A::look_at_lh(Vec3::Z * -2.5, Vec3::ZERO, Vec3::Y);
 
@@ -94,12 +105,10 @@ impl gui::Drawable for MyApplication {
 
         // Draw 2D overlay
 
-        dcf.start_next_layer();
-
         let mut new_settings = dcf.settings().clone();
 
-        new_settings.screen_transform =
-            Mat4::orthographic_lh(0.0, dcf.size().x, 0.0, dcf.size().y, 0.0, 1.0);
+        new_settings.screen_transform = remap_depth(0.0, 0.1) // takes up Z values 0.1 -> 0.0
+            * Mat4::orthographic_lh(0.0, dcf.size().x, 0.0, dcf.size().y, 0.0, 1.0);
         new_settings.view_transform = Affine3A::IDENTITY;
 
         dcf.set_settings(new_settings);
