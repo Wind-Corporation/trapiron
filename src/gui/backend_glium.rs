@@ -1,9 +1,9 @@
 //! GUI backend based on Glium for Linux (X11, Wayland), Windows and MacOS.
 //!
-//! Do not use path `gui::backend_glium` unless writing code that speicifically requires this
+//! Do not use path `gui::backend_glium` unless writing code that specifically requires this
 //! backend. Use `gui::*` wrappers, or use `gui::backend` when implementing these wrappers.
 
-use super::{Index, Vertex2, Vertex3};
+use super::{Index, Vertex};
 use crate::crash;
 use glium::winit;
 use glium::Surface; // OpenGL interface
@@ -22,7 +22,7 @@ type WindowDisplay = glium::Display<glium::glutin::surface::WindowSurface>;
 /// All interactions with Gui objects must happen in main application thread.
 pub struct Gui {
     /// OpenGL program for 3D visuals with lighting support.
-    program_3d: glium::Program,
+    program: glium::Program,
 
     /// The [`glium::Display`] instance of the main window that may be used for OpenGL operations.
     display: WindowDisplay,
@@ -47,16 +47,16 @@ impl Gui {
             .with_title("Trapiron")
             .build(event_loop);
 
-        let program_3d = glium::Program::from_source(
+        let program = glium::Program::from_source(
             &display,
-            include_str!("vertex_3d.glsl"),
-            include_str!("fragment_3d.glsl"),
+            include_str!("backend_glium/shader/vertex.glsl"),
+            include_str!("backend_glium/shader/fragment.glsl"),
             None,
         )
         .expect("Could not create GLSL shared program");
 
         super::Gui::from(Self {
-            program_3d,
+            program,
             display,
             window,
         })
@@ -102,14 +102,15 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
             _phantom: std::marker::PhantomData,
         };
 
-        let mut ctxt = super::DrawContext {
+        let mut ctxt = super::draw::Context {
             gui,
             backend: ctxt,
             time: std::time::Instant::now(),
+            settings: Default::default(),
         };
 
         ctxt.backend.target.clear_color(0.0, 0.0, 0.0, 1.0);
-        app.draw(&mut ctxt);
+        app.draw(&mut super::Dcf::new(&mut ctxt));
         ctxt.backend
             .target
             .finish()
@@ -123,24 +124,16 @@ pub struct DrawContext<'a> {
     _phantom: std::marker::PhantomData<&'a ()>,
 }
 
-glium::implement_vertex!(Vertex3, position, color_multiplier, texture_coords);
+glium::implement_vertex!(Vertex, position, color_multiplier, texture_coords);
 
-glium::implement_vertex!(Vertex2, position, color_multiplier, texture_coords);
-
-pub struct Primitive3 {
-    vertices: glium::VertexBuffer<Vertex3>,
+pub struct Primitive {
+    vertices: glium::VertexBuffer<Vertex>,
     indices: glium::IndexBuffer<Index>,
     texture: Rc<super::Texture>,
 }
 
-pub struct Primitive2 {
-    vertices: glium::VertexBuffer<Vertex2>,
-    indices: glium::IndexBuffer<Index>,
-    texture: Rc<super::Texture>,
-}
-
-impl super::Drawable3 for Primitive3 {
-    fn draw(&mut self, dcf: &mut super::Dcf3) {
+impl super::Drawable for Primitive {
+    fn draw(&mut self, dcf: &mut super::Dcf) {
         let sampler = self
             .texture
             .0
@@ -149,8 +142,8 @@ impl super::Drawable3 for Primitive3 {
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
 
         let uniforms = glium::uniform! {
-            world_transform: dcf.state.world_transform.to_cols_array_2d(),
-            color_multiplier_global: dcf.state.color_multiplier.0.to_array(),
+            world_transform: dcf.state().world_transform.to_cols_array_2d(),
+            color_multiplier_global: dcf.state().color_multiplier.0.to_array(),
             tex: sampler,
         };
 
@@ -160,7 +153,7 @@ impl super::Drawable3 for Primitive3 {
             .draw(
                 &self.vertices,
                 &self.indices,
-                &dcf.ctxt.gui.backend.program_3d,
+                &dcf.ctxt.gui.backend.program,
                 &uniforms,
                 &Default::default(),
             )
@@ -168,19 +161,13 @@ impl super::Drawable3 for Primitive3 {
     }
 }
 
-impl super::Drawable2 for Primitive2 {
-    fn draw(&mut self, _dcf: &mut super::Dcf2) {
-        unimplemented!();
-    }
-}
-
 impl Gui {
-    pub fn make_primitive3(
+    pub fn make_primitive(
         &mut self,
-        vertices: &[Vertex3],
+        vertices: &[Vertex],
         indices: &[Index],
         texture: Rc<super::Texture>,
-    ) -> Result<super::Primitive3, super::PrimitiveError> {
+    ) -> Result<super::Primitive, super::PrimitiveError> {
         // TODO Check validity of indices and length of vertices
 
         let vertices = glium::VertexBuffer::new(&self.display, vertices)
@@ -193,32 +180,7 @@ impl Gui {
         )
         .expect("Could not create an index buffer");
 
-        Ok(super::Primitive3(Primitive3 {
-            vertices,
-            indices,
-            texture,
-        }))
-    }
-
-    pub fn make_primitive2(
-        &mut self,
-        vertices: &[Vertex2],
-        indices: &[Index],
-        texture: Rc<super::Texture>,
-    ) -> Result<super::Primitive2, super::PrimitiveError> {
-        // TODO Check validity of indices and length of vertices
-
-        let vertices = glium::VertexBuffer::new(&self.display, vertices)
-            .expect("Could not create a vertex buffer");
-
-        let indices = glium::IndexBuffer::new(
-            &self.display,
-            glium::index::PrimitiveType::TrianglesList,
-            indices,
-        )
-        .expect("Could not create an index buffer");
-
-        Ok(super::Primitive2(Primitive2 {
+        Ok(super::Primitive(Primitive {
             vertices,
             indices,
             texture,

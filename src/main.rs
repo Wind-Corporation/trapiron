@@ -1,13 +1,12 @@
 #![feature(get_mut_unchecked)]
 
-use crate::gui::Drawable3;
-use glam::{Affine3A, Vec3};
+use glam::Vec3;
 
-mod crash;
-mod gui;
+pub mod crash;
+pub mod gui;
 
 struct MyApplication {
-    rect: gui::Primitive3,
+    rect: gui::Primitive,
     animation_start: Option<std::time::Instant>,
 }
 
@@ -21,24 +20,24 @@ impl MyApplication {
 
         Self {
             rect: gui
-                .make_primitive3(
+                .make_primitive(
                     &[
-                        gui::Vertex3 {
+                        gui::Vertex {
                             position: [-0.5, 0.5, 0.0],
                             color_multiplier: [1.0, 1.0, 1.0],
                             texture_coords: [0.0, 1.0],
                         },
-                        gui::Vertex3 {
+                        gui::Vertex {
                             position: [-0.5, -0.5, 0.0],
                             color_multiplier: [1.0, 1.0, 1.0],
                             texture_coords: [0.0, 0.0],
                         },
-                        gui::Vertex3 {
+                        gui::Vertex {
                             position: [0.5, 0.5, 0.0],
                             color_multiplier: [1.0, 1.0, 1.0],
                             texture_coords: [1.0, 1.0],
                         },
-                        gui::Vertex3 {
+                        gui::Vertex {
                             position: [0.5, -0.5, 0.0],
                             color_multiplier: [1.0, 1.0, 1.0],
                             texture_coords: [1.0, 0.0],
@@ -53,7 +52,7 @@ impl MyApplication {
     }
 }
 
-fn draw_bouncy(object: &mut impl gui::Drawable3, t: f32, dcf: &mut gui::Dcf3) {
+fn draw_bouncy(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
     // Move in screen space
     let mut dcf = dcf.shifted(Vec3::new((t * 1.0).sin() / 2.0, (t * 1.3).sin() / 2.0, 1.0));
     object.draw(&mut dcf.colored(&gui::OpaqueColor::rgb(Vec3::splat(0.1))));
@@ -67,10 +66,10 @@ fn draw_bouncy(object: &mut impl gui::Drawable3, t: f32, dcf: &mut gui::Dcf3) {
     object.draw(&mut dcf);
 }
 
-impl gui::Application for MyApplication {
-    fn draw(&mut self, ctxt: &mut gui::DrawContext) {
-        let mut dcf = ctxt.start_3();
+impl gui::Application for MyApplication {}
 
+impl gui::Drawable for MyApplication {
+    fn draw(&mut self, dcf: &mut gui::Dcf) {
         let t = self.animation_start.get_or_insert(*dcf.time());
         let t = (*dcf.time() - *t).as_secs_f32();
 
@@ -78,7 +77,7 @@ impl gui::Application for MyApplication {
         let green = gui::OpaqueColor::rgb(Vec3::new(0.05, 0.8, 0.1));
 
         draw_bouncy(&mut self.rect, -t, &mut dcf.colored(&blue));
-        draw_bouncy(&mut self.rect, t, &mut dcf);
+        draw_bouncy(&mut self.rect, t, dcf);
         draw_bouncy(
             &mut self.rect,
             t * 5.0,
@@ -87,6 +86,11 @@ impl gui::Application for MyApplication {
                 .scaled(Vec3::splat(0.1))
                 .colored(&green),
         );
+
+        // Look mum! I'm changing draw settings!
+        let old_settings = dcf.settings();
+        let new_settings = old_settings.clone(); // Whoops, there are no settings to change :(
+        dcf.set_settings(new_settings);
     }
 }
 
