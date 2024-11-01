@@ -194,7 +194,16 @@ impl Gui {
         indices: &[Index],
         texture: Rc<super::Texture>,
     ) -> Result<super::Primitive, super::PrimitiveError> {
-        // TODO Check validity of indices and length of vertices
+        for (index_of_index, index) in indices.iter().enumerate() {
+            if *index >= vertices_in.len() as Index {
+                return Err(super::PrimitiveError::IndexOutOfBounds { index_of_index });
+            }
+        }
+
+        let max_vertices = Index::MAX as usize;
+        if vertices_in.len() > max_vertices {
+            return Err(super::PrimitiveError::TooManyVertices { max_vertices });
+        }
 
         let mut vertices = Vec::with_capacity(vertices_in.len());
         for vertex in vertices_in {

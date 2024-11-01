@@ -10,7 +10,7 @@ pub struct Vertex {
 
     /// The multiplicative color filter associated with this vertex.
     ///
-    /// This is an RGB vector with values in range `[0; 1]` for each component.
+    /// This is interpreted as an RGB vector with values in range `[0; 1]` for each component.
     ///
     /// If a texture is active, the color vector extracted from the texture is multiplied
     /// component-wise with this vector. If no texture is bound, this color is used without
@@ -18,8 +18,6 @@ pub struct Vertex {
     pub color_multiplier: OpaqueColor,
 
     /// The coordinates in texture space associated with this vertex (the UV-mapping of the vertex).
-    ///
-    /// This value is ignored when no texture is used.
     pub texture_coords: Vec2,
 }
 
