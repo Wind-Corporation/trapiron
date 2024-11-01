@@ -3,7 +3,7 @@
 //! Do not use path `gui::backend_glium` unless writing code that specifically requires this
 //! backend. Use `gui::*` wrappers, or use `gui::backend` when implementing these wrappers.
 
-use super::{Float, Index, Vec2, Vertex};
+use super::{Float, Index, Vec2};
 use crate::crash;
 use glium::winit;
 use glium::Surface; // OpenGL interface
@@ -131,6 +131,13 @@ pub struct DrawContext<'a> {
     _phantom: std::marker::PhantomData<&'a ()>,
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct Vertex {
+    position: [Float; 3],
+    color_multiplier: [Float; 3],
+    texture_coords: [Float; 2],
+}
+
 glium::implement_vertex!(Vertex, position, color_multiplier, texture_coords);
 
 pub struct Primitive {
@@ -183,13 +190,22 @@ impl super::Drawable for Primitive {
 impl Gui {
     pub fn make_primitive(
         &mut self,
-        vertices: &[Vertex],
+        vertices_in: &[super::Vertex],
         indices: &[Index],
         texture: Rc<super::Texture>,
     ) -> Result<super::Primitive, super::PrimitiveError> {
         // TODO Check validity of indices and length of vertices
 
-        let vertices = glium::VertexBuffer::new(&self.display, vertices)
+        let mut vertices = Vec::with_capacity(vertices_in.len());
+        for vertex in vertices_in {
+            vertices.push(Vertex {
+                position: vertex.position.to_array(),
+                color_multiplier: vertex.color_multiplier.0.to_array(),
+                texture_coords: vertex.texture_coords.to_array(),
+            });
+        }
+
+        let vertices = glium::VertexBuffer::immutable(&self.display, &vertices)
             .expect("Could not create a vertex buffer");
 
         let indices = glium::IndexBuffer::new(

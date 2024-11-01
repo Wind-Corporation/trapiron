@@ -3,7 +3,7 @@
 pub mod crash;
 pub mod gui;
 
-use gui::{Affine3, Mat4, Vec3};
+use gui::{Affine3, Mat4, OpaqueColor, Vec2, Vec3};
 
 struct MyApplication {
     rect: gui::Primitive,
@@ -17,30 +17,31 @@ impl MyApplication {
         println!("My init!");
 
         let texture = gui.texture(BLOCK_TEXTURES.id("test"));
+        let white = OpaqueColor::rgb(Vec3::new(1.0, 1.0, 1.0));
 
         Self {
             rect: gui
                 .make_primitive(
                     &[
                         gui::Vertex {
-                            position: [-0.5, 0.5, 0.0],
-                            color_multiplier: [1.0, 1.0, 1.0],
-                            texture_coords: [0.0, 1.0],
+                            position: Vec3::new(-0.5, 0.5, 0.0),
+                            color_multiplier: white,
+                            texture_coords: Vec2::new(0.0, 1.0),
                         },
                         gui::Vertex {
-                            position: [-0.5, -0.5, 0.0],
-                            color_multiplier: [1.0, 1.0, 1.0],
-                            texture_coords: [0.0, 0.0],
+                            position: Vec3::new(-0.5, -0.5, 0.0),
+                            color_multiplier: white,
+                            texture_coords: Vec2::new(0.0, 0.0),
                         },
                         gui::Vertex {
-                            position: [0.5, 0.5, 0.0],
-                            color_multiplier: [1.0, 1.0, 1.0],
-                            texture_coords: [1.0, 1.0],
+                            position: Vec3::new(0.5, 0.5, 0.0),
+                            color_multiplier: white,
+                            texture_coords: Vec2::new(1.0, 1.0),
                         },
                         gui::Vertex {
-                            position: [0.5, -0.5, 0.0],
-                            color_multiplier: [1.0, 1.0, 1.0],
-                            texture_coords: [1.0, 0.0],
+                            position: Vec3::new(0.5, -0.5, 0.0),
+                            color_multiplier: white,
+                            texture_coords: Vec2::new(1.0, 0.0),
                         },
                     ],
                     &[0, 1, 2, 3, 2, 1],
@@ -53,7 +54,7 @@ impl MyApplication {
 }
 
 fn draw_spinning(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
-    let dark = gui::OpaqueColor::rgb(Vec3::new(0.1, 0.1, 0.15));
+    let dark = OpaqueColor::rgb(Vec3::new(0.1, 0.1, 0.15));
 
     let mut dcf = dcf.tfed(Affine3::from_rotation_y(t));
     let mut dcf = dcf.shifted(Vec3::X);
@@ -96,8 +97,8 @@ impl gui::Drawable for MyApplication {
         let t = self.animation_start.get_or_insert(*dcf.time());
         let t = (*dcf.time() - *t).as_secs_f32();
 
-        let blue = gui::OpaqueColor::rgb(Vec3::new(0.0, 0.1, 0.9));
-        let green = gui::OpaqueColor::rgb(Vec3::new(0.05, 0.8, 0.1));
+        let blue = OpaqueColor::rgb(Vec3::new(0.0, 0.1, 0.9));
+        let green = OpaqueColor::rgb(Vec3::new(0.05, 0.8, 0.1));
 
         draw_spinning(&mut self.rect, t * 1.0, &mut dcf.colored(&blue));
         draw_spinning(&mut self.rect, t * 1.5, dcf);
