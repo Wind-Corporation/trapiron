@@ -113,33 +113,12 @@ pub trait Application: draw::Drawable {}
 //
 
 pub mod primitive;
-pub use primitive::{Primitive, Vertex};
-
-/// An error that might occur when creating a graphics primitive.
-#[derive(Debug)]
-pub enum PrimitiveError {
-    /// The `indices` array contains an index that is out of bounds for the `vertices` array.
-    IndexOutOfBounds {
-        /// The offset into the `indices` array at which some invalid element was found.
-        index_of_index: usize,
-    },
-
-    /// The `vertices` array is too large.
-    TooManyVertices {
-        /// The maximum allowed size of the `vertices` array.
-        max_vertices: usize,
-    },
-}
+pub use primitive::{Mesh, MeshError, Primitive, Vertex};
 
 impl Gui {
     /// Creates a new [3D graphics primitive](Primitive) from raw components.
-    pub fn make_primitive(
-        &mut self,
-        vertices: &[Vertex],
-        indices: &[Index],
-        texture: Rc<Texture>,
-    ) -> Result<Primitive, PrimitiveError> {
-        self.backend.make_primitive(vertices, indices, texture)
+    pub fn make_primitive(&mut self, mesh: Mesh, texture: Rc<Texture>) -> Primitive {
+        self.backend.make_primitive(mesh, texture)
     }
 }
 

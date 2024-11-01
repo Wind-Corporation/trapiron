@@ -190,23 +190,11 @@ impl super::Drawable for Primitive {
 impl Gui {
     pub fn make_primitive(
         &mut self,
-        vertices_in: &[super::Vertex],
-        indices: &[Index],
+        mesh: super::Mesh,
         texture: Rc<super::Texture>,
-    ) -> Result<super::Primitive, super::PrimitiveError> {
-        for (index_of_index, index) in indices.iter().enumerate() {
-            if *index >= vertices_in.len() as Index {
-                return Err(super::PrimitiveError::IndexOutOfBounds { index_of_index });
-            }
-        }
-
-        let max_vertices = Index::MAX as usize;
-        if vertices_in.len() > max_vertices {
-            return Err(super::PrimitiveError::TooManyVertices { max_vertices });
-        }
-
-        let mut vertices = Vec::with_capacity(vertices_in.len());
-        for vertex in vertices_in {
+    ) -> super::Primitive {
+        let mut vertices = Vec::with_capacity(mesh.vertices().len());
+        for vertex in mesh.vertices() {
             vertices.push(Vertex {
                 position: vertex.position.to_array(),
                 color_multiplier: vertex.color_multiplier.0.to_array(),
@@ -220,15 +208,15 @@ impl Gui {
         let indices = glium::IndexBuffer::new(
             &self.display,
             glium::index::PrimitiveType::TrianglesList,
-            indices,
+            mesh.indices(),
         )
         .expect("Could not create an index buffer");
 
-        Ok(super::Primitive(Primitive {
+        super::Primitive(Primitive {
             vertices,
             indices,
             texture,
-        }))
+        })
     }
 }
 

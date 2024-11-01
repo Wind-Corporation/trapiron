@@ -1,6 +1,6 @@
 //! Drawing primitives and related data types.
 
-use super::{OpaqueColor, Vec2, Vec3};
+use super::{Index, OpaqueColor, Vec2, Vec3};
 
 /// A vertex of a [`Primitive`].
 #[derive(Copy, Clone)]
@@ -19,6 +19,68 @@ pub struct Vertex {
 
     /// The coordinates in texture space associated with this vertex (the UV-mapping of the vertex).
     pub texture_coords: Vec2,
+}
+
+/// A group of vertices used to create [`Primitive`s](Primitive).
+pub struct Mesh {
+    /// The unique vertices of this mesh.
+    vertices: Vec<Vertex>,
+
+    /// The order in which vertices from [`Mesh::vertices`] should be used to assemble triangles.
+    ///
+    /// Each element is a valid index into the `vertices` array.
+    indices: Vec<Index>,
+}
+
+/// An error that might occur when creating a [`Mesh`].
+#[derive(Debug)]
+pub enum MeshError {
+    /// The `indices` array contains an index that is out of bounds for the `vertices` array.
+    IndexOutOfBounds {
+        /// The offset into the `indices` array at which some invalid element was found.
+        index_of_index: usize,
+    },
+
+    /// The `vertices` array is too large.
+    TooManyVertices {
+        /// The maximum allowed size of the `vertices` array.
+        max_vertices: usize,
+    },
+}
+
+impl Mesh {
+    /// Creates a [`Mesh`] out of an existing vertex and index arrays.
+    ///
+    /// `vertices` is the data for unique vertices in arbitrary order. The elements of `indices` are
+    /// used in enumeration order to construct triangles, three at a time, intepreted as offsets into
+    /// `vertices`.
+    pub fn new(vertices: Vec<Vertex>, indices: Vec<Index>) -> Result<Self, MeshError> {
+        for (index_of_index, index) in indices.iter().enumerate() {
+            if *index >= vertices.len() as Index {
+                return Err(MeshError::IndexOutOfBounds { index_of_index });
+            }
+        }
+
+        let max_vertices = Index::MAX as usize;
+        if vertices.len() > max_vertices {
+            return Err(MeshError::TooManyVertices { max_vertices });
+        }
+
+        Ok(Self { vertices, indices })
+    }
+
+    /// Returns the unique vertices of this mesh.
+    pub fn vertices(&self) -> &[Vertex] {
+        &self.vertices
+    }
+
+    /// Returns the order in which vertices from [`Mesh::vertices`] should be used to assemble
+    /// triangles.
+    ///
+    /// Each element is a valid index into the `vertices` array.
+    pub fn indices(&self) -> &[Index] {
+        &self.indices
+    }
 }
 
 /// The simplest 3D object that can be drawn to the screen directly.
