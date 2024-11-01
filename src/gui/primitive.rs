@@ -1,6 +1,7 @@
 //! Drawing primitives and related data types.
 
 use super::{Index, OpaqueColor, Vec2, Vec3};
+use std::rc::Rc;
 
 /// A vertex of a [`Primitive`].
 #[derive(Copy, Clone)]
@@ -21,7 +22,10 @@ pub struct Vertex {
     pub texture_coords: Vec2,
 }
 
-/// A group of vertices used to create [`Primitive`s](Primitive).
+/// A group of vertices that form a triangle mesh.
+///
+/// Used to create [`Primitive`s](Primitive) via [`MeshWithTexture`].
+#[derive(Clone)]
 pub struct Mesh {
     /// The unique vertices of this mesh.
     vertices: Vec<Vertex>,
@@ -30,6 +34,21 @@ pub struct Mesh {
     ///
     /// Each element is a valid index into the `vertices` array.
     indices: Vec<Index>,
+}
+
+/// A group of vertices that form a triangle mesh, with a texture applied to the entire geometry.
+///
+/// Note that only a single texture may be bound with a `MeshWithTexture`. Use multiple to assemble
+/// a [`Primitive`] with more than one texture.
+///
+/// Used to create [`Primitive`s](Primitive). See [`Mesh`].
+#[derive(Clone)]
+pub struct MeshWithTexture {
+    /// The vertex data and order for the mesh of triangles.
+    pub geometry: Mesh,
+
+    /// A reference to the texture used to draw the geometry.
+    pub texture: Rc<super::Texture>,
 }
 
 /// An error that might occur when creating a [`Mesh`].
@@ -80,6 +99,14 @@ impl Mesh {
     /// Each element is a valid index into the `vertices` array.
     pub fn indices(&self) -> &[Index] {
         &self.indices
+    }
+
+    /// Pairs a texture reference to this geometry.
+    pub fn bind(self, texture: Rc<super::Texture>) -> MeshWithTexture {
+        MeshWithTexture {
+            geometry: self,
+            texture,
+        }
     }
 }
 

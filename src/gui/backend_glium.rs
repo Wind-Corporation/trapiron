@@ -188,11 +188,9 @@ impl super::Drawable for Primitive {
 }
 
 impl Gui {
-    pub fn make_primitive(
-        &mut self,
-        mesh: super::Mesh,
-        texture: Rc<super::Texture>,
-    ) -> super::Primitive {
+    pub fn make_primitive(&mut self, data: super::MeshWithTexture) -> super::Primitive {
+        let mesh = data.geometry;
+
         let mut vertices = Vec::with_capacity(mesh.vertices().len());
         for vertex in mesh.vertices() {
             vertices.push(Vertex {
@@ -215,7 +213,7 @@ impl Gui {
         super::Primitive(Primitive {
             vertices,
             indices,
-            texture,
+            texture: data.texture,
         })
     }
 }

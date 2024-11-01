@@ -113,12 +113,12 @@ pub trait Application: draw::Drawable {}
 //
 
 pub mod primitive;
-pub use primitive::{Mesh, MeshError, Primitive, Vertex};
+pub use primitive::{Mesh, MeshError, MeshWithTexture, Primitive, Vertex};
 
 impl Gui {
     /// Creates a new [3D graphics primitive](Primitive) from raw components.
-    pub fn make_primitive(&mut self, mesh: Mesh, texture: Rc<Texture>) -> Primitive {
-        self.backend.make_primitive(mesh, texture)
+    pub fn make_primitive(&mut self, data: MeshWithTexture) -> Primitive {
+        self.backend.make_primitive(data)
     }
 }
 
