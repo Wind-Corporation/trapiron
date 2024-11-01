@@ -8,8 +8,7 @@
 //!     - [`backend::DrawContext`](super::backend::DrawContext): Backend-specific container of
 //!       render resources.
 
-use super::{Gui, OpaqueColor};
-use glam::{Affine3A, Mat4, Vec2, Vec3};
+use super::{Affine3, Gui, Mat4, OpaqueColor, Vec2, Vec3};
 
 /// An active render operation.
 ///
@@ -47,7 +46,7 @@ pub struct State {
     /// rotation of a `Primitive` relative to the distant light sources.
     ///
     /// This value is used for lighting computations.
-    pub world_transform: Affine3A,
+    pub world_transform: Affine3,
 
     /// A global color multiplier.
     ///
@@ -58,7 +57,7 @@ pub struct State {
 impl Default for State {
     fn default() -> Self {
         Self {
-            world_transform: Affine3A::IDENTITY,
+            world_transform: Affine3::IDENTITY,
             color_multiplier: OpaqueColor::rgb(Vec3::splat(1.0)),
         }
     }
@@ -156,7 +155,7 @@ impl<'a, 'b> Dcf<'a, 'b> {
     /// In a new frame, applies the `transform` to _world transform_.
     ///
     /// See [`Dcf::apply`] for details.
-    pub fn tfed<'c>(&'c mut self, transform: Affine3A) -> Dcf<'c, 'b> {
+    pub fn tfed<'c>(&'c mut self, transform: Affine3) -> Dcf<'c, 'b> {
         self.apply(|s| s.world_transform *= transform)
     }
 
@@ -164,14 +163,14 @@ impl<'a, 'b> Dcf<'a, 'b> {
     ///
     /// See [`Dcf::apply`] for details.
     pub fn shifted<'c>(&'c mut self, new_zero: Vec3) -> Dcf<'c, 'b> {
-        self.tfed(Affine3A::from_translation(new_zero))
+        self.tfed(Affine3::from_translation(new_zero))
     }
 
     /// In a new frame, scales such that a unit cube has dimentions `new_units` in this frame.
     ///
     /// See [`Dcf::apply`] for details.
     pub fn scaled<'c>(&'c mut self, new_units: Vec3) -> Dcf<'c, 'b> {
-        self.tfed(Affine3A::from_scale(new_units))
+        self.tfed(Affine3::from_scale(new_units))
     }
 
     /// In a new frame, applies an additional color multiplier filter to rendered primitives.
@@ -199,7 +198,7 @@ pub struct Settings {
     /// The transform from world coordinates to view coordinates.
     ///
     /// The inverse of the camera pose. This value is ignored for lighting computations.
-    pub view_transform: Affine3A,
+    pub view_transform: Affine3,
 
     /// The transform from view coordinates to screen coordinates; normally an orthographic or a
     /// perspective projection.

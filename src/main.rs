@@ -1,9 +1,9 @@
 #![feature(get_mut_unchecked)]
 
-use glam::{Affine3A, Mat4, Vec3};
-
 pub mod crash;
 pub mod gui;
+
+use gui::{Affine3, Mat4, Vec3};
 
 struct MyApplication {
     rect: gui::Primitive,
@@ -55,13 +55,13 @@ impl MyApplication {
 fn draw_spinning(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
     let dark = gui::OpaqueColor::rgb(Vec3::new(0.1, 0.1, 0.15));
 
-    let mut dcf = dcf.tfed(Affine3A::from_rotation_y(t));
+    let mut dcf = dcf.tfed(Affine3::from_rotation_y(t));
     let mut dcf = dcf.shifted(Vec3::X);
 
     object.draw(&mut dcf);
     object.draw(
         &mut dcf
-            .tfed(Affine3A::from_rotation_y(180f32.to_radians()))
+            .tfed(Affine3::from_rotation_y(180f32.to_radians()))
             .colored(&dark),
     );
 }
@@ -89,7 +89,7 @@ impl gui::Drawable for MyApplication {
         new_settings.screen_transform = remap_depth(0.1, 1.0) // takes up Z values 1.0 -> 0.1
             * Mat4::perspective_lh(fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
 
-        new_settings.view_transform = Affine3A::look_at_lh(Vec3::Z * -2.5, Vec3::ZERO, Vec3::Y);
+        new_settings.view_transform = Affine3::look_at_lh(Vec3::Z * -2.5, Vec3::ZERO, Vec3::Y);
 
         dcf.set_settings(new_settings);
 
@@ -109,7 +109,7 @@ impl gui::Drawable for MyApplication {
 
         new_settings.screen_transform = remap_depth(0.0, 0.1) // takes up Z values 0.1 -> 0.0
             * Mat4::orthographic_lh(0.0, dcf.size().x, 0.0, dcf.size().y, 0.0, 1.0);
-        new_settings.view_transform = Affine3A::IDENTITY;
+        new_settings.view_transform = Affine3::IDENTITY;
 
         dcf.set_settings(new_settings);
 

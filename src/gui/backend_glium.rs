@@ -3,7 +3,7 @@
 //! Do not use path `gui::backend_glium` unless writing code that specifically requires this
 //! backend. Use `gui::*` wrappers, or use `gui::backend` when implementing these wrappers.
 
-use super::{Index, Vertex};
+use super::{Float, Index, Vec2, Vertex};
 use crate::crash;
 use glium::winit;
 use glium::Surface; // OpenGL interface
@@ -98,8 +98,8 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
     let frame_number = gui.last_started_frame;
     crash::with_context(("Current frame", || frame_number), || {
         let size = gui.backend.window.inner_size();
-        let scale = gui.backend.window.scale_factor() as f32;
-        let size = glam::Vec2::new(size.width as f32 / scale, size.height as f32 / scale);
+        let scale = gui.backend.window.scale_factor() as Float;
+        let size = Vec2::new(size.width as Float / scale, size.height as Float / scale);
 
         let ctxt = DrawContext {
             target: gui.backend.display.draw(),

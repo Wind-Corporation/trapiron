@@ -63,6 +63,32 @@ impl Gui {
 // Drawing basics
 //
 
+/// The floating-point type used for graphics computations.
+pub type Float = f32;
+
+/// The integer data type used to index into vertex arrays.
+///
+/// The current choice of `u16` limits the vertex arrays to a length of 65535.
+pub type Index = u16;
+
+/// A Float 2D vector for graphics computations.
+pub type Vec2 = glam::f32::Vec2;
+
+/// A Float 3D vector for graphics computations.
+pub type Vec3 = glam::f32::Vec3;
+
+/// A Float 4D vector for graphics computations.
+pub type Vec4 = glam::f32::Vec4;
+
+/// A Float 3x3 matrix vector for graphics computations.
+pub type Mat3 = glam::f32::Mat3;
+
+/// A Float 4x4 matrix vector for graphics computations.
+pub type Mat4 = glam::f32::Mat4;
+
+/// A Float 3x4 matrix vector (equivalent to mat4x3 in GLSL) for graphics computations.
+pub type Affine3 = glam::f32::Affine3A;
+
 pub mod draw;
 pub use draw::{Dcf, Drawable};
 
@@ -85,14 +111,6 @@ pub trait Application: draw::Drawable {}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Primitives
 //
-
-/// The floating-point type used for graphics computations.
-pub type Float = f32;
-
-/// The integer data type used to index into vertex arrays.
-///
-/// The current choice of `u16` limits the vertex arrays to a length of 65535.
-pub type Index = u16;
 
 /// A vertex of a [`Primitive`].
 #[derive(Copy, Clone)]
@@ -225,13 +243,13 @@ impl Gui {
 
 /// A color without transparency information.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
-pub struct OpaqueColor(glam::Vec3);
+pub struct OpaqueColor(Vec3);
 
 impl OpaqueColor {
     /// Creates a new color from an RGB triplet.
     ///
     /// Expected channel values are `[0; 1]`, but this is not a strict requirement.
-    pub fn rgb(rgb: glam::Vec3) -> Self {
+    pub fn rgb(rgb: Vec3) -> Self {
         Self(rgb)
     }
 }
