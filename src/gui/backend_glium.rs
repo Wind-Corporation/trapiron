@@ -151,6 +151,7 @@ impl super::Drawable for Primitive {
         let sampler = self
             .texture
             .0
+            .atlas
             .sampled()
             .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest)
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
@@ -193,10 +194,16 @@ impl Gui {
 
         let mut vertices = Vec::with_capacity(mesh.vertices().len());
         for vertex in mesh.vertices() {
+            let texture = &data.texture.0;
+            let texture_coords = Vec2::new(
+                vertex.texture_coords.x * texture.size.x + texture.origin.x,
+                vertex.texture_coords.y * texture.size.y + texture.origin.y,
+            );
+
             vertices.push(Vertex {
                 position: vertex.position.to_array(),
                 color_multiplier: vertex.color_multiplier.0.to_array(),
-                texture_coords: vertex.texture_coords.to_array(),
+                texture_coords: texture_coords.to_array(),
             });
         }
 
@@ -218,7 +225,58 @@ impl Gui {
     }
 }
 
-pub type Texture = glium::texture::Texture2d;
+/// A texture uploaded to the GPU that might be reused for multiple [`Texture`s](super::Texture).
+type Atlas = glium::texture::Texture2d;
+
+/// The [`Texture`](super::Texture) implementation for the Glium backend.
+///
+/// A texture is a section of an _atlas_, which is the actual OpenGL texture that is uploaded to the
+/// GPU. This allows grouping textures that are often used at the same time, saving time on
+/// switching textures.
+///
+/// A `Texture` represents a region of `atlas` from `origin` to `origin + size`. Both `origin` and
+/// `origin + size` represent in-bounds points on the atlas in normalized coordinates. Both `origin`
+/// `and `size` must be positive.
+pub struct Texture {
+    /// The GPU texture object that contains the data of this texture.
+    atlas: Rc<Atlas>,
+
+    /// The starting point of the texture in the `atlas` in normalized coordinates.
+    origin: Vec2,
+
+    /// The span of the texture in the `atlas` in normalized coordinates.
+    size: Vec2,
+}
+
+impl Texture {
+    /// Creates a new Glium [`Texture`] from its raw parts.
+    ///
+    /// Panics if either `origin` or `origin + size` are not valid normalized texture coordinates,
+    /// or if `size` is a zero vector.
+    fn new(atlas: Rc<Atlas>, origin: Vec2, size: Vec2) -> Self {
+        let is_valid = |v: Vec2| v.cmpge(Vec2::ZERO).all() && v.cmple(Vec2::ONE).all();
+
+        assert!(size != Vec2::ZERO, "Cannot create Texture: size is zero");
+
+        assert!(
+            is_valid(origin),
+            "Cannot create Texture: origin {} is out of bounds [0; 1]",
+            origin
+        );
+
+        assert!(
+            is_valid(origin + size),
+            "Cannot create Texture: origin + size {} is out of bounds [0; 1]",
+            origin + size
+        );
+
+        Self {
+            atlas,
+            origin,
+            size,
+        }
+    }
+}
 
 impl Gui {
     pub fn make_texture(
@@ -233,6 +291,7 @@ impl Gui {
         let image = RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
         let texture = Texture2d::with_mipmaps(&self.display, image, MipmapsOption::NoMipmap)
             .expect("Could not upload texture to GPU");
+        let texture = Texture::new(Rc::new(texture), Vec2::ZERO, Vec2::ONE);
         super::Texture(texture)
     }
 }
