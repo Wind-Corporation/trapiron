@@ -17,37 +17,10 @@ impl MyApplication {
         println!("My init!");
 
         let texture = gui.texture(BLOCK_TEXTURES.id("test"));
-        let white = OpaqueColor::rgb(Vec3::new(1.0, 1.0, 1.0));
-
-        let rect_mesh = gui::Mesh::new(
-            vec![
-                gui::Vertex {
-                    position: Vec3::new(-0.5, 0.5, 0.0),
-                    color_multiplier: white,
-                    texture_coords: Vec2::new(0.0, 1.0),
-                },
-                gui::Vertex {
-                    position: Vec3::new(-0.5, -0.5, 0.0),
-                    color_multiplier: white,
-                    texture_coords: Vec2::new(0.0, 0.0),
-                },
-                gui::Vertex {
-                    position: Vec3::new(0.5, 0.5, 0.0),
-                    color_multiplier: white,
-                    texture_coords: Vec2::new(1.0, 1.0),
-                },
-                gui::Vertex {
-                    position: Vec3::new(0.5, -0.5, 0.0),
-                    color_multiplier: white,
-                    texture_coords: Vec2::new(1.0, 0.0),
-                },
-            ],
-            vec![0, 1, 2, 3, 2, 1],
-        )
-        .expect("Could not make a rectangle");
+        let rect = gui::Mesh::rectangle_at(Vec3::new(-0.5, -0.5, 0.0), Vec2::ONE).bind(texture);
 
         Self {
-            rect: gui.make_primitive(vec![rect_mesh.bind(texture)]),
+            rect: gui.make_primitive(vec![rect]),
             animation_start: None,
         }
     }

@@ -121,3 +121,75 @@ impl super::Drawable for Primitive {
         self.0.draw(dcf);
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Mesh utility methods
+//
+
+impl Mesh {
+    /// Creates a [`Mesh`] with a single parallelogram.
+    ///
+    /// The parallelogram spans from _origin_ to _origin + width + height_ and has sides parallel to
+    /// _width_ and _height_.
+    ///
+    /// Texture coordinates are set up to stretch the texture over the entire parallelogram.
+    /// Color multiplier is set to white.
+    pub fn parallelogram_at(origin: Vec3, width: Vec3, height: Vec3) -> Self {
+        Self {
+            vertices: vec![
+                Vertex {
+                    position: origin + height,
+                    color_multiplier: OpaqueColor::WHITE,
+                    texture_coords: Vec2::new(0.0, 1.0),
+                },
+                Vertex {
+                    position: origin,
+                    color_multiplier: OpaqueColor::WHITE,
+                    texture_coords: Vec2::new(0.0, 0.0),
+                },
+                Vertex {
+                    position: origin + width + height,
+                    color_multiplier: OpaqueColor::WHITE,
+                    texture_coords: Vec2::new(1.0, 1.0),
+                },
+                Vertex {
+                    position: origin + width,
+                    color_multiplier: OpaqueColor::WHITE,
+                    texture_coords: Vec2::new(1.0, 0.0),
+                },
+            ],
+            indices: vec![0, 1, 2, 3, 2, 1],
+        }
+    }
+
+    /// Creates a [`Mesh`] with a single parallelogram.
+    ///
+    /// The parallelogram spans from _(0; 0; 0)_ to _width + height_ and has sides parallel to
+    /// _width_ and _height_.
+    ///
+    /// Texture coordinates are set up to stretch the texture over the entire parallelogram.
+    /// Color multiplier is set to white.
+    pub fn parallelogram(width: Vec3, height: Vec3) -> Self {
+        Self::parallelogram_at(Vec3::ZERO, width, height)
+    }
+
+    /// Creates a [`Mesh`] with a single rectangle in the XY plane.
+    ///
+    /// The rectangle spans from _origin_ to _origin + size_ and has sides parallel to X and Y axis.
+    ///
+    /// Texture coordinates are set up to stretch the texture over the entire rectangle.
+    /// Color multiplier is set to white.
+    pub fn rectangle_at(origin: Vec3, size: Vec2) -> Self {
+        Self::parallelogram_at(origin.into(), Vec3::X * size.x, Vec3::Y * size.y)
+    }
+
+    /// Creates a [`Mesh`] with a single rectangle in the XY plane.
+    ///
+    /// The rectangle spans from _(0; 0; 0)_ to _size_ and has sides parallel to X and Y axis.
+    ///
+    /// Texture coordinates are set up to stretch the texture over the entire rectangle.
+    /// Color multiplier is set to white.
+    pub fn rectangle(size: Vec2) -> Self {
+        Self::rectangle_at(Vec3::ZERO, size)
+    }
+}

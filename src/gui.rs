@@ -198,7 +198,9 @@ impl OpaqueColor {
     /// Creates a new color from an RGB triplet.
     ///
     /// Expected channel values are `[0; 1]`, but this is not a strict requirement.
-    pub fn rgb(rgb: Vec3) -> Self {
+    pub const fn rgb(rgb: Vec3) -> Self {
         Self(rgb)
     }
+
+    const WHITE: OpaqueColor = OpaqueColor::rgb(Vec3::ONE);
 }
