@@ -117,8 +117,8 @@ pub use primitive::{Mesh, MeshError, MeshWithTexture, Primitive, Vertex};
 
 impl Gui {
     /// Creates a new [3D graphics primitive](Primitive) from raw components.
-    pub fn make_primitive(&mut self, data: MeshWithTexture) -> Primitive {
-        self.backend.make_primitive(data)
+    pub fn make_primitive(&mut self, meshes: Vec<MeshWithTexture>) -> Primitive {
+        self.backend.make_primitive(meshes)
     }
 }
 

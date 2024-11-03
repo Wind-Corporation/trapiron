@@ -47,7 +47,7 @@ impl MyApplication {
         .expect("Could not make a rectangle");
 
         Self {
-            rect: gui.make_primitive(rect_mesh.bind(texture)),
+            rect: gui.make_primitive(vec![rect_mesh.bind(texture)]),
             animation_start: None,
         }
     }

@@ -3,7 +3,7 @@
 //! Do not use path `gui::backend_glium` unless writing code that specifically requires this
 //! backend. Use `gui::*` wrappers, or use `gui::backend` when implementing these wrappers.
 
-use super::{Float, Index, Vec2};
+use super::{Float, Vec2};
 use crate::crash;
 use glium::winit;
 use glium::Surface; // OpenGL interface
@@ -131,97 +131,16 @@ pub struct DrawContext<'a> {
     _phantom: std::marker::PhantomData<&'a ()>,
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct Vertex {
-    position: [Float; 3],
-    color_multiplier: [Float; 3],
-    texture_coords: [Float; 2],
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Primitive assembly
+//
 
-glium::implement_vertex!(Vertex, position, color_multiplier, texture_coords);
-
-pub struct Primitive {
-    vertices: glium::VertexBuffer<Vertex>,
-    indices: glium::IndexBuffer<Index>,
-    texture: Rc<super::Texture>,
-}
-
-impl super::Drawable for Primitive {
-    fn draw(&mut self, dcf: &mut super::Dcf) {
-        let sampler = self
-            .texture
-            .0
-            .atlas
-            .sampled()
-            .minify_filter(glium::uniforms::MinifySamplerFilter::Nearest)
-            .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
-
-        let uniforms = glium::uniform! {
-            screen_transform: dcf.settings().screen_transform.to_cols_array_2d(),
-            view_transform: dcf.settings().view_transform.to_cols_array_2d(),
-            world_transform: dcf.state().world_transform.to_cols_array_2d(),
-            color_multiplier_global: dcf.state().color_multiplier.0.to_array(),
-            tex: sampler,
-        };
-
-        let params = glium::DrawParameters {
-            depth: glium::Depth {
-                test: glium::draw_parameters::DepthTest::IfLess,
-                write: true,
-                ..Default::default()
-            },
-            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
-            ..Default::default()
-        };
-
-        dcf.ctxt
-            .backend
-            .target
-            .draw(
-                &self.vertices,
-                &self.indices,
-                &dcf.ctxt.gui.backend.program,
-                &uniforms,
-                &params,
-            )
-            .unwrap();
-    }
-}
+mod primitive;
+pub use primitive::Primitive;
 
 impl Gui {
-    pub fn make_primitive(&mut self, data: super::MeshWithTexture) -> super::Primitive {
-        let mesh = data.geometry;
-
-        let mut vertices = Vec::with_capacity(mesh.vertices().len());
-        for vertex in mesh.vertices() {
-            let texture = &data.texture.0;
-            let texture_coords = Vec2::new(
-                vertex.texture_coords.x * texture.size.x + texture.origin.x,
-                vertex.texture_coords.y * texture.size.y + texture.origin.y,
-            );
-
-            vertices.push(Vertex {
-                position: vertex.position.to_array(),
-                color_multiplier: vertex.color_multiplier.0.to_array(),
-                texture_coords: texture_coords.to_array(),
-            });
-        }
-
-        let vertices = glium::VertexBuffer::immutable(&self.display, &vertices)
-            .expect("Could not create a vertex buffer");
-
-        let indices = glium::IndexBuffer::new(
-            &self.display,
-            glium::index::PrimitiveType::TrianglesList,
-            mesh.indices(),
-        )
-        .expect("Could not create an index buffer");
-
-        super::Primitive(Primitive {
-            vertices,
-            indices,
-            texture: data.texture,
-        })
+    pub fn make_primitive(&self, meshes: Vec<super::MeshWithTexture>) -> super::Primitive {
+        primitive::make_primitive(&self, meshes)
     }
 }
 
@@ -275,6 +194,10 @@ impl Texture {
             origin,
             size,
         }
+    }
+
+    fn identity(&self) -> *const Self {
+        &raw const *self
     }
 }
 
