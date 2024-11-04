@@ -97,6 +97,10 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
 
     let frame_number = gui.last_started_frame;
     crash::with_context(("Current frame", || frame_number), || {
+        let size = gui.backend.window.inner_size();
+        let scale = gui.backend.window.scale_factor() as f32;
+        let size = glam::Vec2::new(size.width as f32 / scale, size.height as f32 / scale);
+
         let ctxt = DrawContext {
             target: gui.backend.display.draw(),
             _phantom: std::marker::PhantomData,
@@ -105,11 +109,14 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
         let mut ctxt = super::draw::Context {
             gui,
             backend: ctxt,
+            size,
             time: std::time::Instant::now(),
             settings: Default::default(),
         };
 
-        ctxt.backend.target.clear_color(0.0, 0.0, 0.0, 1.0);
+        ctxt.backend
+            .target
+            .clear_color_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
         app.draw(&mut super::Dcf::new(&mut ctxt));
         ctxt.backend
             .target
@@ -142,9 +149,21 @@ impl super::Drawable for Primitive {
             .magnify_filter(glium::uniforms::MagnifySamplerFilter::Nearest);
 
         let uniforms = glium::uniform! {
+            screen_transform: dcf.settings().screen_transform.to_cols_array_2d(),
+            view_transform: dcf.settings().view_transform.to_cols_array_2d(),
             world_transform: dcf.state().world_transform.to_cols_array_2d(),
             color_multiplier_global: dcf.state().color_multiplier.0.to_array(),
             tex: sampler,
+        };
+
+        let params = glium::DrawParameters {
+            depth: glium::Depth {
+                test: glium::draw_parameters::DepthTest::IfLess,
+                write: true,
+                ..Default::default()
+            },
+            backface_culling: glium::draw_parameters::BackfaceCullingMode::CullClockwise,
+            ..Default::default()
         };
 
         dcf.ctxt
@@ -155,7 +174,7 @@ impl super::Drawable for Primitive {
                 &self.indices,
                 &dcf.ctxt.gui.backend.program,
                 &uniforms,
-                &Default::default(),
+                &params,
             )
             .unwrap();
     }

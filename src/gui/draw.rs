@@ -9,7 +9,7 @@
 //!       render resources.
 
 use super::{Gui, OpaqueColor};
-use glam::{Affine3A, Vec3};
+use glam::{Affine3A, Mat4, Vec2, Vec3};
 
 /// An active render operation.
 ///
@@ -20,6 +20,11 @@ pub(super) struct Context<'a> {
 
     /// The implementation provided by the backend.
     pub backend: super::backend::DrawContext<'a>,
+
+    /// The viewport size for this frame.
+    ///
+    /// See [`Dcf::size`] for a more specific definition.
+    pub size: Vec2,
 
     /// The time moment that draw logic should use for this frame.
     pub time: std::time::Instant,
@@ -112,6 +117,15 @@ impl<'a, 'b> Dcf<'a, 'b> {
         &self.ctxt.time
     }
 
+    /// Returns the size of the viewport in pixels that draw logic should use.
+    ///
+    /// Returns the size of the renderable area ("window client area", "clip space", "viewport")
+    /// measured in logical pixels (not necessarily physical display pixels). The dimensions are
+    /// positive but not necessarily integer values.
+    pub fn size(&self) -> Vec2 {
+        self.ctxt.size
+    }
+
     /// Returns a reference to the [`Gui`] instance.
     pub fn gui(&mut self) -> &mut Gui {
         &mut self.ctxt.gui
@@ -182,7 +196,17 @@ impl<'a, 'b> Dcf<'a, 'b> {
 /// rendered, though they may change once or twice.
 #[derive(Clone, Default)]
 pub struct Settings {
-    // Empty for now; will contain view transform and lighting settings.
+    /// The transform from world coordinates to view coordinates.
+    ///
+    /// The inverse of the camera pose. This value is ignored for lighting computations.
+    pub view_transform: Affine3A,
+
+    /// The transform from view coordinates to screen coordinates; normally an orthographic or a
+    /// perspective projection.
+    ///
+    /// Transforms 3D camera-centric coordinates to 2D screen-based normalized coordinates in the
+    /// [-1;+1] range for X and Y.
+    pub screen_transform: Mat4,
 }
 
 /// Something that can be rendered onto the screen.
