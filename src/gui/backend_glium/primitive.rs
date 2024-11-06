@@ -5,11 +5,12 @@ use std::{ops::Deref, rc::Rc};
 #[derive(Copy, Clone, Debug)]
 pub struct Vertex {
     position: [Float; 3],
+    normal: [Float; 3],
     color_multiplier: [Float; 3],
     texture_coords: [Float; 2],
 }
 
-glium::implement_vertex!(Vertex, position, color_multiplier, texture_coords);
+glium::implement_vertex!(Vertex, position, normal, color_multiplier, texture_coords);
 
 pub struct Primitive {
     vertices: glium::VertexBuffer<Vertex>,
@@ -211,6 +212,7 @@ fn convert_vertex(input: &crate::gui::Vertex, texture: &super::Texture) -> Verte
 
     Vertex {
         position: input.position.to_array(),
+        normal: input.normal.to_array(),
         color_multiplier: input.color_multiplier.0.to_array(),
         texture_coords,
     }

@@ -9,6 +9,10 @@ pub struct Vertex {
     /// The position (XYZ) of this vertex in its model's frame of reference.
     pub position: Vec3,
 
+    /// A unit length vector (XYZ) perpendicular to the triangles defined by this vertex in its
+    /// model's frame of reference.
+    pub normal: Vec3,
+
     /// The multiplicative color filter associated with this vertex.
     ///
     /// This is interpreted as an RGB vector with values in range `[0; 1]` for each component.
@@ -135,25 +139,31 @@ impl Mesh {
     /// Texture coordinates are set up to stretch the texture over the entire parallelogram.
     /// Color multiplier is set to white.
     pub fn parallelogram_at(origin: Vec3, width: Vec3, height: Vec3) -> Self {
+        let normal = width.cross(height).normalize_or(Vec3::X);
+
         Self {
             vertices: vec![
                 Vertex {
                     position: origin + height,
+                    normal,
                     color_multiplier: OpaqueColor::WHITE,
                     texture_coords: Vec2::new(0.0, 1.0),
                 },
                 Vertex {
                     position: origin,
+                    normal,
                     color_multiplier: OpaqueColor::WHITE,
                     texture_coords: Vec2::new(0.0, 0.0),
                 },
                 Vertex {
                     position: origin + width + height,
+                    normal,
                     color_multiplier: OpaqueColor::WHITE,
                     texture_coords: Vec2::new(1.0, 1.0),
                 },
                 Vertex {
                     position: origin + width,
+                    normal,
                     color_multiplier: OpaqueColor::WHITE,
                     texture_coords: Vec2::new(1.0, 0.0),
                 },
