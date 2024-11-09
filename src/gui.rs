@@ -203,4 +203,5 @@ impl OpaqueColor {
     }
 
     const WHITE: OpaqueColor = OpaqueColor::rgb(Vec3::ONE);
+    const BLACK: OpaqueColor = OpaqueColor::rgb(Vec3::ZERO);
 }

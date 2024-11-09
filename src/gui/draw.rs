@@ -206,6 +206,41 @@ pub struct Settings {
     /// Transforms 3D camera-centric coordinates to 2D screen-based normalized coordinates in the
     /// [-1;+1] range for X and Y.
     pub screen_transform: Mat4,
+
+    /// Lighting and reflection settings. See [`Lighting`].
+    pub lighting: Lighting,
+}
+
+#[derive(Clone)]
+/// Settings for 3D lighting.
+///
+/// Lighting uses the _ambient_ and _diffuse_ components of the [Phong reflection
+/// model](https://en.wikipedia.org/wiki/Phong_reflection_model). Only one diffuse light source is
+/// supported.
+///
+/// [`Default`] lighting settings effectively disable lighting effects.
+pub struct Lighting {
+    /// Illumination from a uniform, omnidirectional light source.
+    pub ambient_color: OpaqueColor,
+
+    /// Illumination from a directional distant light source.
+    pub diffuse_color: OpaqueColor,
+
+    /// A normalized direction for `diffuse_color`.
+    ///
+    /// The vector indicates the direction _away from_ the light source, i.e. triangles with normals
+    /// equal to `diffuse_direction` are illuminated least brightly.
+    pub diffuse_direction: Vec3,
+}
+
+impl Default for Lighting {
+    fn default() -> Self {
+        Self {
+            ambient_color: OpaqueColor::WHITE,
+            diffuse_color: OpaqueColor::BLACK,
+            diffuse_direction: Vec3::Y,
+        }
+    }
 }
 
 /// Something that can be rendered onto the screen.

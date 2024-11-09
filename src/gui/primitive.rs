@@ -202,4 +202,15 @@ impl Mesh {
     pub fn rectangle(size: Vec2) -> Self {
         Self::rectangle_at(Vec3::ZERO, size)
     }
+
+    pub fn tmp_ppp(origin: Vec3, width: Vec3, height: Vec3, depth: Vec3) -> [Self; 6] {
+        [
+            Self::parallelogram_at(origin, width, height),
+            Self::parallelogram_at(origin, depth, width),
+            Self::parallelogram_at(origin, height, depth),
+            Self::parallelogram_at(origin + width + height + depth, -height, -width),
+            Self::parallelogram_at(origin + width + height + depth, -width, -depth),
+            Self::parallelogram_at(origin + width + height + depth, -depth, -height),
+        ]
+    }
 }

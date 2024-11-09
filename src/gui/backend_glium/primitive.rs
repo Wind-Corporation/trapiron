@@ -30,6 +30,9 @@ impl Drawable for Primitive {
         let view_transform = dcf.settings().view_transform.to_cols_array_2d();
         let world_transform = dcf.state().world_transform.to_cols_array_2d();
         let color_multiplier_global = dcf.state().color_multiplier.0.to_array();
+        let ambient_color = dcf.settings().lighting.ambient_color.0.to_array();
+        let diffuse_color = dcf.settings().lighting.diffuse_color.0.to_array();
+        let diffuse_direction = dcf.settings().lighting.diffuse_direction.to_array();
 
         let params = glium::DrawParameters {
             depth: glium::Depth {
@@ -57,6 +60,9 @@ impl Drawable for Primitive {
                 screen_transform: screen_transform,
                 view_transform: view_transform,
                 world_transform: world_transform,
+                ambient_color: ambient_color,
+                diffuse_color: diffuse_color,
+                diffuse_direction: diffuse_direction,
                 color_multiplier_global: color_multiplier_global,
                 tex: sampler,
             };
