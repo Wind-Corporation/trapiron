@@ -1,6 +1,6 @@
 //! Drawing primitives and related data types.
 
-use super::{Index, OpaqueColor, Vec2, Vec3};
+use super::{Float, Index, OpaqueColor, Vec2, Vec3};
 use std::rc::Rc;
 
 /// A vertex of a [`Primitive`].
@@ -127,44 +127,56 @@ impl super::Drawable for Primitive {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Mesh utility methods
+// Simple Mesh builders
 //
 
-impl Mesh {
-    /// Creates a [`Mesh`] with a single parallelogram.
-    ///
-    /// The parallelogram spans from _origin_ to _origin + width + height_ and has sides parallel to
-    /// _width_ and _height_.
-    ///
-    /// Texture coordinates are set up to stretch the texture over the entire parallelogram.
-    /// Color multiplier is set to white.
-    pub fn parallelogram_at(origin: Vec3, width: Vec3, height: Vec3) -> Self {
-        let normal = width.cross(height).normalize_or(Vec3::X);
+/// A template for a [`Mesh`] with a single parallelogram.
+///
+/// The parallelogram may be located anywhere and it can have any arbitrary orientation. The color
+/// multiplier shared by the vertices is configurable. The texture is mapped to stretch to fill the
+/// entire shape.
+///
+/// See [`Mesh::square`], [`Mesh::rectangle`] and [`Mesh::parallelogram`] to obtain a builder. Use
+/// [`Self::build`] or [`Self::bind`] to produce a [`Mesh`] or a [`MeshWithTexture`] respectively.
+#[derive(Clone)]
+pub struct ParallelogramBuilder {
+    origin: Vec3,
+    width: Vec3,
+    height: Vec3,
+    color_multiplier: OpaqueColor,
+}
 
-        Self {
+impl ParallelogramBuilder {
+    /// Bakes this parallelogram into a [`Mesh`].
+    ///
+    /// See also [`Self::bind`].
+    pub fn build(&self) -> Mesh {
+        let normal = self.width.cross(self.height).normalize_or(Vec3::X);
+
+        Mesh {
             vertices: vec![
                 Vertex {
-                    position: origin + height,
+                    position: self.origin + self.height,
                     normal,
-                    color_multiplier: OpaqueColor::WHITE,
+                    color_multiplier: self.color_multiplier,
                     texture_coords: Vec2::new(0.0, 1.0),
                 },
                 Vertex {
-                    position: origin,
+                    position: self.origin,
                     normal,
-                    color_multiplier: OpaqueColor::WHITE,
+                    color_multiplier: self.color_multiplier,
                     texture_coords: Vec2::new(0.0, 0.0),
                 },
                 Vertex {
-                    position: origin + width + height,
+                    position: self.origin + self.width + self.height,
                     normal,
-                    color_multiplier: OpaqueColor::WHITE,
+                    color_multiplier: self.color_multiplier,
                     texture_coords: Vec2::new(1.0, 1.0),
                 },
                 Vertex {
-                    position: origin + width,
+                    position: self.origin + self.width,
                     normal,
-                    color_multiplier: OpaqueColor::WHITE,
+                    color_multiplier: self.color_multiplier,
                     texture_coords: Vec2::new(1.0, 0.0),
                 },
             ],
@@ -172,45 +184,112 @@ impl Mesh {
         }
     }
 
-    /// Creates a [`Mesh`] with a single parallelogram.
+    /// Bakes this parallelogram into a [`MeshWithTexture`], applying the provided texture.
     ///
-    /// The parallelogram spans from _(0; 0; 0)_ to _width + height_ and has sides parallel to
-    /// _width_ and _height_.
+    /// Shorthand for `builder.build().bind(texture)`.
     ///
-    /// Texture coordinates are set up to stretch the texture over the entire parallelogram.
-    /// Color multiplier is set to white.
-    pub fn parallelogram(width: Vec3, height: Vec3) -> Self {
-        Self::parallelogram_at(Vec3::ZERO, width, height)
+    /// See also [`Self::build`].
+    pub fn bind(&self, texture: Rc<super::Texture>) -> MeshWithTexture {
+        self.build().bind(texture)
     }
 
-    /// Creates a [`Mesh`] with a single rectangle in the XY plane.
-    ///
-    /// The rectangle spans from _origin_ to _origin + size_ and has sides parallel to X and Y axis.
-    ///
-    /// Texture coordinates are set up to stretch the texture over the entire rectangle.
-    /// Color multiplier is set to white.
-    pub fn rectangle_at(origin: Vec3, size: Vec2) -> Self {
-        Self::parallelogram_at(origin.into(), Vec3::X * size.x, Vec3::Y * size.y)
+    /// Moves the origin (one of the corners) to the provided location.
+    pub fn at(mut self, origin: Vec3) -> Self {
+        self.origin = origin;
+        self
     }
 
-    /// Creates a [`Mesh`] with a single rectangle in the XY plane.
-    ///
-    /// The rectangle spans from _(0; 0; 0)_ to _size_ and has sides parallel to X and Y axis.
-    ///
-    /// Texture coordinates are set up to stretch the texture over the entire rectangle.
-    /// Color multiplier is set to white.
-    pub fn rectangle(size: Vec2) -> Self {
-        Self::rectangle_at(Vec3::ZERO, size)
+    /// Centers the parallelogram at (0; 0; 0).
+    pub fn centered(self) -> Self {
+        let center = (self.width + self.height) / 2.0;
+        self.at(-center)
     }
 
-    pub fn tmp_ppp(origin: Vec3, width: Vec3, height: Vec3, depth: Vec3) -> [Self; 6] {
-        [
-            Self::parallelogram_at(origin, width, height),
-            Self::parallelogram_at(origin, depth, width),
-            Self::parallelogram_at(origin, height, depth),
-            Self::parallelogram_at(origin + width + height + depth, -height, -width),
-            Self::parallelogram_at(origin + width + height + depth, -width, -depth),
-            Self::parallelogram_at(origin + width + height + depth, -depth, -height),
+    /// Applies a color multiplier, compounding with previous color multiplier edits.
+    ///
+    /// See [`Vertex::color_multiplier`] for more details.
+    pub fn apply_color_mult(mut self, color_multiplier: OpaqueColor) -> Self {
+        self.color_multiplier = OpaqueColor(self.color_multiplier.0 * color_multiplier.0);
+        self
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Mesh utility methods
+//
+
+impl Mesh {
+    /// Begins building a `Mesh` with a single square.
+    ///
+    /// The square is aligned with X and Y axis and spans (0; 0; 0) to (`size`; `size`; 0).
+    /// Its color mulitplier is white.
+    ///
+    /// See [`ParallelogramBuilder`] for more details.
+    pub fn square(size: Float) -> ParallelogramBuilder {
+        ParallelogramBuilder {
+            origin: Vec3::ZERO,
+            width: Vec3::X * size,
+            height: Vec3::Y * size,
+            color_multiplier: OpaqueColor::WHITE,
+        }
+    }
+
+    /// Begins building a `Mesh` with a single rectangle.
+    ///
+    /// The rectangle is aligned with X and Y axis and spans (0; 0; 0) to (`size`; 0). Its color
+    /// mulitplier is white.
+    ///
+    /// See [`ParallelogramBuilder`] for more details.
+    pub fn rectangle(size: Vec2) -> ParallelogramBuilder {
+        ParallelogramBuilder {
+            width: Vec3::X * size.x,
+            height: Vec3::Y * size.y,
+            ..Mesh::square(1.0)
+        }
+    }
+
+    /// Begins building a `Mesh` with a single parallelogram.
+    ///
+    /// The parallelogram has sides (0; 0; 0) to `width` and (0; 0; 0) to `height`. Its color
+    /// mulitplier is white.
+    ///
+    /// See [`ParallelogramBuilder`] for more details.
+    pub fn parallelogram(width: Vec3, height: Vec3) -> ParallelogramBuilder {
+        ParallelogramBuilder {
+            width,
+            height,
+            ..Mesh::square(1.0)
+        }
+    }
+
+    pub fn tmp_ppp(
+        origin: Vec3,
+        width: Vec3,
+        height: Vec3,
+        depth: Vec3,
+        texture: &Rc<super::Texture>,
+    ) -> Vec<MeshWithTexture> {
+        let min_origin = origin;
+        let max_origin = origin + width + height + depth;
+        vec![
+            Self::parallelogram(width, height)
+                .at(min_origin)
+                .bind(texture.clone()),
+            Self::parallelogram(depth, width)
+                .at(min_origin)
+                .bind(texture.clone()),
+            Self::parallelogram(height, depth)
+                .at(min_origin)
+                .bind(texture.clone()),
+            Self::parallelogram(-height, -width)
+                .at(max_origin)
+                .bind(texture.clone()),
+            Self::parallelogram(-width, -depth)
+                .at(max_origin)
+                .bind(texture.clone()),
+            Self::parallelogram(-depth, -height)
+                .at(max_origin)
+                .bind(texture.clone()),
         ]
     }
 }

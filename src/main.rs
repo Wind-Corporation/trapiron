@@ -3,7 +3,7 @@
 pub mod crash;
 pub mod gui;
 
-use gui::{Affine3, Mat4, OpaqueColor, Vec2, Vec3};
+use gui::{Affine3, Mat4, OpaqueColor, Vec3};
 
 struct MyApplication {
     rect: gui::Primitive,
@@ -18,13 +18,12 @@ impl MyApplication {
         println!("My init!");
 
         let texture = gui.texture(BLOCK_TEXTURES.id("test"));
-        let rect =
-            gui::Mesh::rectangle_at(Vec3::new(-0.5, -0.5, 0.0), Vec2::ONE).bind(texture.clone());
-        let cube = gui::Mesh::tmp_ppp(Vec3::splat(-0.5), Vec3::X, Vec3::Y, Vec3::Z);
+        let rect = gui::Mesh::square(1.0).centered().bind(texture.clone());
+        let cube = gui::Mesh::tmp_ppp(Vec3::splat(-0.5), Vec3::X, Vec3::Y, Vec3::Z, &texture);
 
         Self {
             rect: gui.make_primitive(vec![rect]),
-            cube: gui.make_primitive(cube.into_iter().map(|m| m.bind(texture.clone())).collect()),
+            cube: gui.make_primitive(cube),
             animation_start: None,
         }
     }
