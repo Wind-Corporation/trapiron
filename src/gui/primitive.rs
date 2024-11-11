@@ -214,10 +214,6 @@ impl ParallelogramBuilder {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Mesh utility methods
-//
-
 impl Mesh {
     /// Begins building a `Mesh` with a single square.
     ///
@@ -291,5 +287,36 @@ impl Mesh {
                 .at(max_origin)
                 .bind(texture.clone()),
         ]
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// OBJ input
+//
+
+impl Mesh {
+    /// Loads a mesh from a triangulated Wavefront OBJ file.
+    ///
+    /// The positions and normals of vertices are used verbatim; only first two texture coordinates
+    /// are used; color multiplier is set to white.
+    pub fn load_obj<T>(input: T) -> Result<Self, obj::ObjError>
+    where
+        T: std::io::BufRead,
+    {
+        let data = obj::load_obj::<obj::TexturedVertex, T, Index>(input)?;
+
+        Ok(Self {
+            vertices: data
+                .vertices
+                .into_iter()
+                .map(|v| Vertex {
+                    position: v.position.into(),
+                    normal: v.normal.into(),
+                    color_multiplier: OpaqueColor::WHITE,
+                    texture_coords: Vec2::new(v.texture[0], v.texture[1]),
+                })
+                .collect(),
+            indices: data.indices,
+        })
     }
 }
