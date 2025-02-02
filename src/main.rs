@@ -8,6 +8,7 @@ use gui::{Affine3, Mat4, OpaqueColor, Vec3};
 struct MyApplication {
     rect: gui::Primitive,
     cube: gui::Primitive,
+    axes: gui::Primitive,
     animation_start: Option<std::time::Instant>,
 }
 
@@ -24,6 +25,7 @@ impl MyApplication {
         Self {
             rect: gui.make_primitive(vec![rect]),
             cube: gui.make_primitive(cube),
+            axes: gui::debug::axes(gui),
             animation_start: None,
         }
     }
@@ -80,6 +82,8 @@ impl gui::Drawable for MyApplication {
         };
 
         dcf.set_settings(new_settings);
+
+        self.axes.draw(dcf);
 
         let blue = OpaqueColor::rgb(Vec3::new(0.0, 0.1, 0.9));
         let green = OpaqueColor::rgb(Vec3::new(0.05, 0.8, 0.1));
