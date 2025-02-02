@@ -70,3 +70,22 @@ pub fn load_image(name: &str) -> image::DynamicImage {
     image::load(cursor, image::ImageFormat::Png)
         .expect(&format!("Image {name:?} is not a valid PNG file"))
 }
+
+/// Loads an 3D mesh by its name, returning it as a [`super::Mesh`].
+///
+/// No caching takes place - each successful call results in a new allocation and decoding.
+///
+/// The name must match regex `[A-Za-z_]+`, otherwise this function panics.
+///
+/// Missing data, IO errors, decoding errors, allocation errors all result in a panic.
+pub fn load_mesh(name: &str) -> super::Mesh {
+    let cursor = load_asset(AssetLoadRequest {
+        kind: "Mesh",
+        location: "mesh",
+        name,
+        suffix: ".obj",
+    });
+
+    super::Mesh::load_obj(cursor)
+        .expect(&format!("Mesh {name:?} is not a valid OBJ file"))
+}
