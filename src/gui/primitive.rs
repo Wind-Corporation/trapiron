@@ -69,6 +69,12 @@ pub enum MeshError {
         /// The maximum allowed size of the `vertices` array.
         max_vertices: usize,
     },
+
+    /// The `indices` array is too large.
+    TooManyIndices {
+        /// The maximum allowed size of the `indices` array.
+        max_indices: usize,
+    },
 }
 
 impl Mesh {
@@ -87,6 +93,11 @@ impl Mesh {
         let max_vertices = Index::MAX as usize;
         if vertices.len() > max_vertices {
             return Err(MeshError::TooManyVertices { max_vertices });
+        }
+
+        let max_indices = 6 * max_vertices;
+        if indices.len() > max_indices {
+            return Err(MeshError::TooManyIndices { max_indices });
         }
 
         Ok(Self { vertices, indices })
