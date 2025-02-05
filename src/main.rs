@@ -34,13 +34,14 @@ impl MyApplication {
 fn draw_spinning(object: &mut impl gui::Drawable, t: f32, dcf: &mut gui::Dcf) {
     let dark = OpaqueColor::rgb(Vec3::new(0.1, 0.1, 0.15));
 
-    let mut dcf = dcf.tfed(Affine3::from_rotation_y(t));
+    let mut dcf = dcf.tfed(Affine3::from_rotation_z(t));
     let mut dcf = dcf.shifted(Vec3::X * 2.0);
 
-    object.draw(&mut dcf);
+    object.draw(&mut dcf.tfed(Affine3::from_rotation_x(90f32.to_radians())));
     object.draw(
         &mut dcf
-            .tfed(Affine3::from_rotation_y(180f32.to_radians()))
+            .tfed(Affine3::from_rotation_z(180f32.to_radians()))
+            .tfed(Affine3::from_rotation_x(90f32.to_radians()))
             .colored(&dark),
     );
 }
@@ -71,14 +72,14 @@ impl gui::Drawable for MyApplication {
         new_settings.screen_transform = remap_depth(0.1, 1.0) // takes up Z values 1.0 -> 0.1
             * Mat4::perspective_rh(fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
 
-        new_settings.view_transform = Affine3::look_at_rh(Vec3::Z * -2.5, Vec3::ZERO, Vec3::Y)
+        new_settings.view_transform = Affine3::look_at_rh(Vec3::Y * -2.5, Vec3::ZERO, Vec3::Z)
             * Affine3::from_rotation_x((t * 0.2).sin() * 0.4)
-            * Affine3::from_rotation_y(t / 3.0);
+            * Affine3::from_rotation_z(t / 3.0);
 
         new_settings.lighting = gui::draw::Lighting {
             ambient_color: OpaqueColor::rgb(Vec3::new(0.1, 0.15, 0.3)),
             diffuse_color: OpaqueColor::rgb(Vec3::new(0.9, 0.85, 0.6)),
-            diffuse_direction: Vec3::new(1.0, 1.0, 1.0).normalize(),
+            diffuse_direction: Vec3::new(1.0, 2.0, -3.0).normalize(),
         };
 
         dcf.set_settings(new_settings);
@@ -92,18 +93,13 @@ impl gui::Drawable for MyApplication {
         draw_spinning(&mut self.rect, t * 1.5, dcf);
         draw_spinning(&mut self.rect, t * 0.8, &mut dcf.colored(&green));
 
-        self.rect.draw(
-            &mut dcf
-                .shifted(Vec3::Y * -3.0)
-                .scaled(Vec3::splat(10.0))
-                .tfed(Affine3::from_rotation_x(90f32.to_radians())),
-        );
+        self.rect.draw(&mut dcf.shifted(Vec3::Z * -3.0).scaled(Vec3::splat(10.0)));
 
         self.cube.draw(
             &mut dcf
-                .tfed(Affine3::from_rotation_y(t))
+                .tfed(Affine3::from_rotation_z(t))
                 .tfed(Affine3::from_rotation_x(t * 1.3))
-                .tfed(Affine3::from_rotation_z(t * 0.7)),
+                .tfed(Affine3::from_rotation_y(t * 0.7)),
         );
 
         // Draw 2D overlay
