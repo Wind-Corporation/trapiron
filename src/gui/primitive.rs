@@ -268,22 +268,22 @@ impl Mesh {
         let min_origin = origin;
         let max_origin = origin + width + height + depth;
         vec![
-            Self::parallelogram(width, height)
+            Self::parallelogram(height, width)
                 .at(min_origin)
                 .bind(texture.clone()),
-            Self::parallelogram(depth, width)
+            Self::parallelogram(width, depth)
                 .at(min_origin)
                 .bind(texture.clone()),
-            Self::parallelogram(height, depth)
+            Self::parallelogram(depth, height)
                 .at(min_origin)
                 .bind(texture.clone()),
-            Self::parallelogram(-height, -width)
+            Self::parallelogram(-width, -height)
                 .at(max_origin)
                 .bind(texture.clone()),
-            Self::parallelogram(-width, -depth)
+            Self::parallelogram(-depth, -width)
                 .at(max_origin)
                 .bind(texture.clone()),
-            Self::parallelogram(-depth, -height)
+            Self::parallelogram(-height, -depth)
                 .at(max_origin)
                 .bind(texture.clone()),
         ]

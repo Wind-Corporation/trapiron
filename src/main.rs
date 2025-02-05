@@ -69,9 +69,9 @@ impl gui::Drawable for MyApplication {
 
         let fov = 75f32.to_radians();
         new_settings.screen_transform = remap_depth(0.1, 1.0) // takes up Z values 1.0 -> 0.1
-            * Mat4::perspective_lh(fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
+            * Mat4::perspective_rh(fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
 
-        new_settings.view_transform = Affine3::look_at_lh(Vec3::Z * -2.5, Vec3::ZERO, Vec3::Y)
+        new_settings.view_transform = Affine3::look_at_rh(Vec3::Z * -2.5, Vec3::ZERO, Vec3::Y)
             * Affine3::from_rotation_x((t * 0.2).sin() * 0.4)
             * Affine3::from_rotation_y(t / 3.0);
 
@@ -111,7 +111,7 @@ impl gui::Drawable for MyApplication {
         let mut new_settings = dcf.settings().clone();
 
         new_settings.screen_transform = remap_depth(0.0, 0.1) // takes up Z values 0.1 -> 0.0
-            * Mat4::orthographic_lh(0.0, dcf.size().x, 0.0, dcf.size().y, 0.0, 1.0);
+            * Mat4::orthographic_rh(0.0, dcf.size().x, 0.0, dcf.size().y, 0.0, 1.0);
         new_settings.view_transform = Affine3::IDENTITY;
         new_settings.lighting = Default::default();
 
