@@ -310,6 +310,8 @@ impl Mesh {
     ///
     /// The positions and normals of vertices are used verbatim; only first two texture coordinates
     /// are used; color multiplier is set to white.
+    ///
+    /// See doc/obj.md for more details.
     pub fn load_obj<T>(input: T) -> Result<Self, obj::ObjError>
     where
         T: std::io::BufRead,
