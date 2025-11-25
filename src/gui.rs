@@ -63,6 +63,32 @@ impl Gui {
 // Drawing basics
 //
 
+/// The floating-point type used for graphics computations.
+pub type Float = f32;
+
+/// The integer data type used to index into vertex arrays.
+///
+/// The current choice of `u16` limits the vertex arrays to a length of 65535.
+pub type Index = u16;
+
+/// A Float 2D vector for graphics computations.
+pub type Vec2 = glam::f32::Vec2;
+
+/// A Float 3D vector for graphics computations.
+pub type Vec3 = glam::f32::Vec3;
+
+/// A Float 4D vector for graphics computations.
+pub type Vec4 = glam::f32::Vec4;
+
+/// A Float 3x3 matrix vector for graphics computations.
+pub type Mat3 = glam::f32::Mat3;
+
+/// A Float 4x4 matrix vector for graphics computations.
+pub type Mat4 = glam::f32::Mat4;
+
+/// A Float 3x4 matrix vector (equivalent to mat4x3 in GLSL) for graphics computations.
+pub type Affine3 = glam::f32::Affine3A;
+
 pub mod draw;
 pub use draw::{Dcf, Drawable};
 
@@ -86,72 +112,13 @@ pub trait Application: draw::Drawable {}
 // Primitives
 //
 
-/// The floating-point type used for graphics computations.
-pub type Float = f32;
-
-/// The integer data type used to index into vertex arrays.
-///
-/// The current choice of `u16` limits the vertex arrays to a length of 65535.
-pub type Index = u16;
-
-/// A vertex of a [`Primitive`].
-#[derive(Copy, Clone)]
-pub struct Vertex {
-    /// The position (XYZ) of this vertex in its model's frame of reference.
-    pub position: [Float; 3],
-
-    /// The multiplicative color filter associated with this vertex.
-    ///
-    /// This is an RGB vector with values in range `[0; 1]` for each component.
-    ///
-    /// If a texture is active, the color vector extracted from the texture is multiplied
-    /// component-wise with this vector. If no texture is bound, this color is used without
-    /// modification instead. The filter is interpolated linearly between vertices.
-    pub color_multiplier: [Float; 3],
-
-    /// The coordinates in texture space associated with this vertex (the UV-mapping of the vertex).
-    ///
-    /// This value is ignored when no texture is used.
-    pub texture_coords: [Float; 2],
-}
-
-/// The simplest 3D object that can be drawn to the screen directly.
-///
-/// A Primitive is a collection of vertices, connected into triangles according to an vertex index
-/// list, that has a set of textures associated with it.
-pub struct Primitive(backend::Primitive);
-
-impl Drawable for Primitive {
-    fn draw(&mut self, dcf: &mut Dcf) {
-        self.0.draw(dcf);
-    }
-}
-
-/// An error that might occur when creating a graphics primitive.
-#[derive(Debug)]
-pub enum PrimitiveError {
-    /// The `indices` array contains an index that is out of bounds for the `vertices` array.
-    IndexOutOfBounds {
-        /// The offset into the `indices` array at which some invalid element was found.
-        index_of_index: usize,
-    },
-
-    /// The `vertices` array is too large.
-    TooManyVertices {
-        /// The maximum allowed size of the `vertices` array.
-        max_vertices: usize,
-    },
-}
+pub mod primitive;
+pub use primitive::{Mesh, MeshError, MeshWithTexture, Primitive, Vertex};
 
 impl Gui {
     /// Creates a new [3D graphics primitive](Primitive) from raw components.
-    pub fn make_primitive(
-        &mut self,
-        vertices: &[Vertex],
-        indices: &[Index],
-        texture: Rc<Texture>,
-    ) -> Result<Primitive, PrimitiveError> {
-        self.backend.make_primitive(vertices, indices, texture)
+    pub fn make_primitive(&mut self, meshes: Vec<MeshWithTexture>) -> Primitive {
+        self.backend.make_primitive(meshes)
     }
 }
 
@@ -225,13 +192,22 @@ impl Gui {
 
 /// A color without transparency information.
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
-pub struct OpaqueColor(glam::Vec3);
+pub struct OpaqueColor(Vec3);
 
 impl OpaqueColor {
     /// Creates a new color from an RGB triplet.
     ///
     /// Expected channel values are `[0; 1]`, but this is not a strict requirement.
-    pub fn rgb(rgb: glam::Vec3) -> Self {
+    pub const fn rgb(rgb: Vec3) -> Self {
         Self(rgb)
     }
+
+    const WHITE: OpaqueColor = OpaqueColor::rgb(Vec3::ONE);
+    const BLACK: OpaqueColor = OpaqueColor::rgb(Vec3::ZERO);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Debugging
+//
+
+pub mod debug;
