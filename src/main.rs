@@ -1,5 +1,3 @@
-#![feature(get_mut_unchecked)]
-
 pub mod crash;
 pub mod gui;
 
@@ -93,7 +91,8 @@ impl gui::Drawable for MyApplication {
         draw_spinning(&mut self.rect, t * 1.5, dcf);
         draw_spinning(&mut self.rect, t * 0.8, &mut dcf.colored(&green));
 
-        self.rect.draw(&mut dcf.shifted(Vec3::Z * -3.0).scaled(Vec3::splat(10.0)));
+        self.rect
+            .draw(&mut dcf.shifted(Vec3::Z * -3.0).scaled(Vec3::splat(10.0)));
 
         self.cube.draw(
             &mut dcf
