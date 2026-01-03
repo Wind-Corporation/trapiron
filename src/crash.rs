@@ -37,7 +37,12 @@ pub fn report_crash(message: &str) {
     let context = context::take()
         .into_iter()
         .fold(String::new(), |s, (key, value)| {
-            s + &format!("{}:\n    {}\n", key, value)
+            s + &format!(
+                "- {}{}{}\n",
+                key,
+                if key == "" { "" } else { ":\n    " },
+                value
+            )
         });
 
     eprintln!(
