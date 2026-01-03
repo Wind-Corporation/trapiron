@@ -57,6 +57,11 @@ impl Gui {
             texture_registry: HashMap::new(),
         }
     }
+
+    /// Returns the start time of the application; more precisely, the instant this Gui was created.
+    pub fn start_time(&mut self) -> std::time::Instant {
+        self.start_time
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

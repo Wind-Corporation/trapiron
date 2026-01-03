@@ -2,7 +2,7 @@
 //!
 //! This module provides facilities to access texture data.
 
-use include_dir::{include_dir, Dir};
+use include_dir::{Dir, include_dir};
 
 /// The embedded filesystem.
 static GUI_ASSETS: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/asset/gui");
@@ -30,7 +30,7 @@ struct AssetLoadRequest<'a> {
 /// function panics. No other parameters are checked.
 ///
 /// If the asset could not be found, this function panics.
-fn load_asset(req: AssetLoadRequest) -> std::io::Cursor<&[u8]> {
+fn load_asset(req: AssetLoadRequest<'_>) -> std::io::Cursor<&[u8]> {
     let AssetLoadRequest {
         kind,
         location,
@@ -86,6 +86,5 @@ pub fn load_mesh(name: &str) -> super::Mesh {
         suffix: ".obj",
     });
 
-    super::Mesh::load_obj(cursor)
-        .expect(&format!("Mesh {name:?} is not a valid OBJ file"))
+    super::Mesh::load_obj(cursor).expect(&format!("Mesh {name:?} is not a valid OBJ file"))
 }

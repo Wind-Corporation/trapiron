@@ -160,7 +160,7 @@ impl SortedMeshes {
 
     /// Returns an iterator that visits each groups of [`MeshWithTexture`s](MeshWithTexture) that
     /// share the same texture exactly once.
-    pub fn groups(&self) -> Groups {
+    pub fn groups(&self) -> Groups<'_> {
         Groups {
             meshes: &self,
             pos: 0,
