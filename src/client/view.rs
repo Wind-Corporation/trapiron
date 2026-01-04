@@ -1,4 +1,7 @@
-use crate::gui::{Affine3, Drawable, Float, Mat4, OpaqueColor, Vec3};
+use crate::{
+    gui::{Affine3, Drawable, Float, Mat4, OpaqueColor, Vec3},
+    world::World,
+};
 
 pub struct View {
     rect: crate::gui::Primitive,
@@ -53,8 +56,8 @@ fn remap_depth(new_min: Float, new_max: crate::gui::Float) -> Mat4 {
     ])
 }
 
-impl Drawable for View {
-    fn draw(&mut self, dcf: &mut crate::gui::Dcf) {
+impl View {
+    pub fn draw(&mut self, dcf: &mut crate::gui::Dcf, world: &World) {
         // Draw 3D scene
 
         let t = self.animation_start.get_or_insert(*dcf.time());
@@ -66,9 +69,9 @@ impl Drawable for View {
         new_settings.screen_transform = remap_depth(0.1, 1.0) // takes up Z values 1.0 -> 0.1
             * Mat4::perspective_rh(fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
 
-        new_settings.view_transform = Affine3::look_at_rh(Vec3::Y * -2.5, Vec3::ZERO, Vec3::Z)
-            * Affine3::from_rotation_x((t * 0.2).sin() * 0.4)
-            * Affine3::from_rotation_z(t / 3.0);
+        new_settings.view_transform = Affine3::look_at_rh(world.camera.pos, Vec3::X, Vec3::Z)
+            * Affine3::from_rotation_z(world.camera.yaw)
+            * Affine3::from_rotation_y(world.camera.pitch);
 
         new_settings.lighting = crate::gui::draw::Lighting {
             ambient_color: OpaqueColor::rgb(Vec3::new(0.1, 0.15, 0.3)),

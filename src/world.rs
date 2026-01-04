@@ -1,27 +1,76 @@
-use std::time::Duration;
+use std::{f32::consts::PI, time::Duration};
 
 use crate::logic::Logic;
+
+/// The floating-point type used for world state.
+pub type Float = f32;
+
+/// A Float 2D vector for world state.
+pub type Vec2 = glam::f32::Vec2;
+
+/// A Float 3D vector for world state.
+pub type Vec3 = glam::f32::Vec3;
+
+/// A Float 4D vector for world state.
+pub type Vec4 = glam::f32::Vec4;
+
+/// A Float 3x3 matrix vector for world state.
+pub type Mat3 = glam::f32::Mat3;
+
+/// A Float 4x4 matrix vector for world state.
+pub type Mat4 = glam::f32::Mat4;
+
+/// A Float 3x4 matrix vector (equivalent to mat4x3 in GLSL) for world state.
+pub type Affine3 = glam::f32::Affine3A;
 
 pub enum Event {
     Tick,
     PresentationTick { duration: Duration },
+    MoveCamera,
 }
 
-pub struct World;
+#[derive(Default)]
+pub struct Camera {
+    pub pos: Vec3,
+    pub yaw: Float,
+    pub pitch: Float,
+    pub vel: Vec3,
+}
+
+pub struct World {
+    pub camera: Camera,
+}
 
 impl World {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            camera: Camera {
+                pos: Vec3::ZERO,
+                yaw: -PI / 2f32,
+                pitch: 0f32,
+                vel: Vec3::ZERO,
+            },
+        }
     }
 
     pub fn process(&mut self, event: Event, _logic: &Logic) {
         match event {
-            Event::Tick => println!("Tick!"),
+            Event::Tick => (),
+            Event::MoveCamera => {
+                self.camera.vel += Vec3::X;
+            }
             _ => (),
         }
     }
 
-    pub fn process_presentation(&mut self, _event: &Event, _logic: &Logic) {
-        println!("Presentation tick!");
+    pub fn process_presentation(&mut self, event: &Event, _logic: &Logic) {
+        match event {
+            Event::PresentationTick { duration } => {
+                self.camera.pos += self.camera.vel * duration.as_secs_f32();
+                self.camera.vel *= 0.5f32.powf(duration.as_secs_f32());
+                dbg!(self.camera.pos, self.camera.vel);
+            }
+            _ => (),
+        }
     }
 }

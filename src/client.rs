@@ -96,7 +96,7 @@ impl Game {
         crate::crash::with_context(("Tick phase", || "presentation"), || {
             let new_events_begin = self.buffered_events.len();
             self.buffered_events.push(Event::PresentationTick {
-                duration: Duration::from_secs(0), // TODO
+                duration: Duration::from_secs(1) / 60, // TODO
             });
             self.control.fetch_into(&mut self.buffered_events);
             let new_events_end = self.buffered_events.len();
@@ -113,7 +113,7 @@ impl Game {
 impl Drawable for Game {
     fn draw(&mut self, dcf: &mut Dcf) {
         crate::crash::with_context(("", || "Game draw"), || {
-            self.view.draw(dcf);
+            self.view.draw(dcf, &self.world);
         });
     }
 }
