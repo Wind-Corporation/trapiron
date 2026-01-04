@@ -5,8 +5,8 @@
 
 use super::{Float, Vec2};
 use crate::crash;
-use glium::winit;
 use glium::Surface; // OpenGL interface
+use glium::winit;
 use std::rc::Rc;
 
 mod winit_lifecycle;
@@ -83,6 +83,16 @@ fn handle_event(
         }
 
         RedrawRequested => process_frame(gui, app),
+
+        KeyboardInput {
+            event,
+            is_synthetic,
+            ..
+        } => {
+            if !is_synthetic {
+                app.on_input(super::Input::Keyboard(event));
+            }
+        }
 
         _ => (),
     };

@@ -18,7 +18,11 @@ impl MyApplication {
     }
 }
 
-impl gui::Application for MyApplication {}
+impl gui::Application for MyApplication {
+    fn on_input(&mut self, input: gui::Input) {
+        self.game.on_input(input);
+    }
+}
 
 impl gui::Drawable for MyApplication {
     fn draw(&mut self, dcf: &mut gui::Dcf) {

@@ -111,7 +111,13 @@ pub use draw::{Dcf, Drawable};
 ///
 /// ## See also
 /// backend::run
-pub trait Application: draw::Drawable {}
+pub trait Application: draw::Drawable {
+    fn on_input(&mut self, input: Input);
+}
+
+pub enum Input<'a> {
+    Keyboard(&'a winit::event::KeyEvent),
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Primitives

@@ -26,7 +26,8 @@ pub type Affine3 = glam::f32::Affine3A;
 pub enum Event {
     Tick,
     PresentationTick { duration: Duration },
-    MoveCamera,
+    MoveCamera { direction: Vec3 },
+    RotateCamera { yaw: Float, pitch: Float },
 }
 
 #[derive(Default)]
@@ -35,6 +36,7 @@ pub struct Camera {
     pub yaw: Float,
     pub pitch: Float,
     pub vel: Vec3,
+    pub control: Vec3,
 }
 
 pub struct World {
@@ -49,6 +51,7 @@ impl World {
                 yaw: -PI / 2f32,
                 pitch: 0f32,
                 vel: Vec3::ZERO,
+                control: Vec3::ZERO,
             },
         }
     }
@@ -56,8 +59,12 @@ impl World {
     pub fn process(&mut self, event: Event, _logic: &Logic) {
         match event {
             Event::Tick => (),
-            Event::MoveCamera => {
-                self.camera.vel += Vec3::X;
+            Event::MoveCamera { direction } => {
+                self.camera.control = direction;
+            }
+            Event::RotateCamera { yaw, pitch } => {
+                self.camera.yaw = yaw;
+                self.camera.pitch = pitch;
             }
             _ => (),
         }
@@ -66,9 +73,15 @@ impl World {
     pub fn process_presentation(&mut self, event: &Event, _logic: &Logic) {
         match event {
             Event::PresentationTick { duration } => {
-                self.camera.pos += self.camera.vel * duration.as_secs_f32();
-                self.camera.vel *= 0.5f32.powf(duration.as_secs_f32());
-                dbg!(self.camera.pos, self.camera.vel);
+                let dt = duration.as_secs_f32();
+
+                const CONTROL_ACCELERATION: Float = 5f32;
+                let dv = self.camera.control - self.camera.vel;
+                let dv = dv.clamp_length_max(CONTROL_ACCELERATION * dt);
+                self.camera.vel += dv;
+
+                self.camera.pos += self.camera.vel * dt;
+                self.camera.vel *= 0.25f32.powf(dt);
             }
             _ => (),
         }

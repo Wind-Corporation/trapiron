@@ -1514,6 +1514,7 @@ dependencies = [
  "image",
  "include_dir",
  "obj-rs",
+ "winit",
 ]
 
 [[package]]

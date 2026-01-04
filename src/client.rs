@@ -126,6 +126,10 @@ impl Game {
             self.presentation_ticks.end_tick(now);
         });
     }
+
+    pub fn on_input(&mut self, input: crate::gui::Input) {
+        self.control.on_input(input);
+    }
 }
 
 impl Drawable for Game {

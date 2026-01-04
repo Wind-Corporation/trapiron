@@ -10,3 +10,4 @@ glium = { git = "https://github.com/OLEGSHA/glium.git", branch = "support-all-ma
 image = { version = "0.25.9", default-features = false, features = ["png"] }
 include_dir = { version = "0.7.4", default-features = false }
 obj-rs = { version = "0.7.4", default-features = false }
+winit = "0.30.12"
