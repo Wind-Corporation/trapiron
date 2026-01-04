@@ -11,22 +11,30 @@ use crate::{
 };
 
 struct TickStats {
-    last: Option<Instant>,
-    count: u64,
+    last_duration: Duration,
+    last_timestamp: Option<Instant>,
+    completed: u64,
 }
 
 impl TickStats {
-    pub fn on_tick_end(&mut self, now: Instant) {
-        self.last = Some(now);
-        self.count += 1;
+    pub fn start_tick(&mut self, now: Instant) {
+        if let Some(time) = self.last_timestamp {
+            self.last_duration = now - time;
+        };
+    }
+
+    pub fn end_tick(&mut self, now: Instant) {
+        self.last_timestamp = Some(now);
+        self.completed += 1;
     }
 }
 
 impl Default for TickStats {
     fn default() -> Self {
         Self {
-            last: None,
-            count: 0,
+            last_duration: Duration::from_secs(0),
+            last_timestamp: None,
+            completed: 0,
         }
     }
 }
@@ -59,15 +67,21 @@ impl Game {
 
             buffered_events: Vec::with_capacity(256),
 
-            logic_ticks: Default::default(),
-            presentation_ticks: Default::default(),
+            logic_ticks: TickStats {
+                last_duration: target_tick_duration(),
+                ..Default::default()
+            },
+            presentation_ticks: TickStats {
+                last_duration: Duration::from_secs(1) / 60,
+                ..Default::default()
+            },
         }
     }
 
     pub fn tick(&mut self, now: Instant) {
         crate::crash::with_context(("", || "Game tick"), || {
             loop {
-                let last_logic_tick = *self.logic_ticks.last.get_or_insert(now);
+                let last_logic_tick = *self.logic_ticks.last_timestamp.get_or_insert(now);
                 let next_logic_tick = last_logic_tick + target_tick_duration();
                 if next_logic_tick >= now {
                     break;
@@ -82,21 +96,25 @@ impl Game {
 
     fn tick_logic(&mut self, now: Instant) {
         crate::crash::with_context(("Tick phase", || "logic"), || {
+            self.logic_ticks.start_tick(now);
+
             while let Some(event) = self.buffered_events.pop() {
                 self.world.process(event, &self.logic);
             }
 
             self.world.process(Event::Tick, &self.logic);
 
-            self.logic_ticks.on_tick_end(now);
+            self.logic_ticks.end_tick(now);
         });
     }
 
     fn tick_presentation(&mut self, now: Instant) {
         crate::crash::with_context(("Tick phase", || "presentation"), || {
+            self.presentation_ticks.start_tick(now);
+
             let new_events_begin = self.buffered_events.len();
             self.buffered_events.push(Event::PresentationTick {
-                duration: Duration::from_secs(1) / 60, // TODO
+                duration: self.presentation_ticks.last_duration,
             });
             self.control.fetch_into(&mut self.buffered_events);
             let new_events_end = self.buffered_events.len();
@@ -105,7 +123,7 @@ impl Game {
                 self.world.process_presentation(event, &self.logic);
             }
 
-            self.presentation_ticks.on_tick_end(now);
+            self.presentation_ticks.end_tick(now);
         });
     }
 }
