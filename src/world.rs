@@ -1,4 +1,4 @@
-use std::{f32::consts::PI, time::Duration};
+use std::time::Duration;
 
 use crate::logic::Logic;
 
@@ -46,13 +46,7 @@ pub struct World {
 impl World {
     pub fn new() -> Self {
         Self {
-            camera: Camera {
-                pos: Vec3::ZERO,
-                yaw: -PI / 2f32,
-                pitch: 0f32,
-                vel: Vec3::ZERO,
-                control: Vec3::ZERO,
-            },
+            camera: Default::default(),
         }
     }
 
@@ -61,10 +55,6 @@ impl World {
             Event::Tick => (),
             Event::MoveCamera { direction } => {
                 self.camera.control = direction;
-            }
-            Event::RotateCamera { yaw, pitch } => {
-                self.camera.yaw = yaw;
-                self.camera.pitch = pitch;
             }
             _ => (),
         }
@@ -75,13 +65,21 @@ impl World {
             Event::PresentationTick { duration } => {
                 let dt = duration.as_secs_f32();
 
-                const CONTROL_ACCELERATION: Float = 5f32;
-                let dv = self.camera.control - self.camera.vel;
+                const CONTROL_ACCELERATION: Float = 50.0;
+                const CONTROL_SPEED: Float = 5.0;
+                let target =
+                    Mat3::from_rotation_z(self.camera.yaw) * self.camera.control * CONTROL_SPEED;
+
+                let dv = target - self.camera.vel;
                 let dv = dv.clamp_length_max(CONTROL_ACCELERATION * dt);
                 self.camera.vel += dv;
 
                 self.camera.pos += self.camera.vel * dt;
                 self.camera.vel *= 0.25f32.powf(dt);
+            }
+            Event::RotateCamera { yaw, pitch } => {
+                self.camera.yaw = *yaw;
+                self.camera.pitch = *pitch;
             }
             _ => (),
         }

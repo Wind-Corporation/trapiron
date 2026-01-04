@@ -1,12 +1,16 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, f32::consts::PI};
 
-use winit::{event::ElementState, keyboard::KeyCode};
+use winit::{
+    event::{ElementState, KeyEvent},
+    keyboard::{KeyCode, PhysicalKey},
+};
 
-use crate::world::{Event, Vec3};
+use crate::world::{Event, Vec2, Vec3};
 
 #[derive(Default)]
 pub struct Control {
     keyboard_camera_move_state: Vec3,
+    mouse_camera_rotate_state: Vec2,
 
     accumulator: VecDeque<Event>,
 }
@@ -26,7 +30,7 @@ impl Control {
         }
     }
 
-    pub fn on_input(&mut self, input: crate::gui::Input) {
+    pub fn on_input(&mut self, input: crate::gui::Input, gui: &mut crate::gui::Gui) {
         use crate::gui::Input::*;
 
         match input {
@@ -55,6 +59,33 @@ impl Control {
                         direction: self.keyboard_camera_move_state.clamp_length_max(1f32),
                     });
                 }
+
+                if let KeyEvent {
+                    physical_key: PhysicalKey::Code(KeyCode::Escape),
+                    state: ElementState::Pressed,
+                    repeat: false,
+                    ..
+                } = key_event
+                {
+                    gui.set_cursor_captured(!gui.cursor_captured());
+                }
+            }
+
+            CapturedCursorMove { displacement } => {
+                const SENSITIVITY: crate::gui::Float = 0.004;
+                let yaw = &mut self.mouse_camera_rotate_state.x;
+                let pitch = &mut self.mouse_camera_rotate_state.y;
+
+                *yaw -= displacement.x * SENSITIVITY;
+                *yaw %= 2f32 * PI;
+
+                *pitch += displacement.y * SENSITIVITY;
+                *pitch = pitch.clamp(-PI / 2f32, PI / 2f32);
+
+                self.accumulator.push_back(Event::RotateCamera {
+                    yaw: *yaw,
+                    pitch: *pitch,
+                });
             }
         }
     }

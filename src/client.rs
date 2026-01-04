@@ -127,8 +127,8 @@ impl Game {
         });
     }
 
-    pub fn on_input(&mut self, input: crate::gui::Input) {
-        self.control.on_input(input);
+    pub fn on_input(&mut self, input: crate::gui::Input, gui: &mut crate::gui::Gui) {
+        self.control.on_input(input, gui);
     }
 }
 

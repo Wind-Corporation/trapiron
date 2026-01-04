@@ -69,10 +69,10 @@ impl View {
         new_settings.screen_transform = remap_depth(0.1, 1.0) // takes up Z values 1.0 -> 0.1
             * Mat4::perspective_rh(fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
 
-        new_settings.view_transform =
-            Affine3::look_at_rh(world.camera.pos, world.camera.pos + Vec3::X, Vec3::Z)
-                * Affine3::from_rotation_z(world.camera.yaw)
-                * Affine3::from_rotation_y(world.camera.pitch);
+        new_settings.view_transform = Affine3::look_at_rh(Vec3::ZERO, Vec3::X, Vec3::Z)
+            * Affine3::from_rotation_y(-world.camera.pitch)
+            * Affine3::from_rotation_z(-world.camera.yaw)
+            * Affine3::from_translation(-world.camera.pos);
 
         new_settings.lighting = crate::gui::draw::Lighting {
             ambient_color: OpaqueColor::rgb(Vec3::new(0.1, 0.15, 0.3)),
@@ -112,10 +112,16 @@ impl View {
 
         dcf.set_settings(new_settings);
 
+        let tint = if dcf.gui().cursor_captured() {
+            &OpaqueColor::WHITE
+        } else {
+            &blue
+        };
         self.rect.draw(
             &mut dcf
                 .shifted(Vec3::new(48.0, 48.0, 0.0))
-                .scaled(Vec3::splat(48.0 * 2.0)),
+                .scaled(Vec3::splat(48.0 * 2.0))
+                .colored(tint),
         );
     }
 }

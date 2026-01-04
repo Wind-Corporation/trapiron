@@ -31,6 +31,18 @@ pub struct Gui {
     ///
     /// Implementation note: this must be the last field to prevent deadlocks on drop.
     window: winit::window::Window,
+
+    /// Whether cursor, if any, should be "captured" rather than visible.
+    ///
+    /// This reflects the desired state of capture according to application logic. The cursor is
+    /// released on focus loss and other similar events.
+    ///
+    /// See https://github.com/rust-windowing/winit/issues/4222 for a reliability issue with this
+    /// flag.
+    cursor_capture_wanted: bool,
+
+    /// Whether winit has been instructed to grab and hide the cursor.
+    cursor_actually_captured: bool,
 }
 
 pub use winit_lifecycle::run;
@@ -59,8 +71,15 @@ impl Gui {
             program,
             display,
             window,
+            cursor_capture_wanted: false,
+            cursor_actually_captured: false,
         })
     }
+}
+
+enum WinitEvent<'a> {
+    Window(&'a winit::event::WindowEvent),
+    Device(&'a winit::event::DeviceEvent),
 }
 
 /// Processes a single Glium event.
@@ -70,28 +89,41 @@ impl Gui {
 fn handle_event(
     gui: &mut super::Gui,
     app: &mut impl super::Application,
-    event: &winit::event::WindowEvent,
+    event: WinitEvent<'_>,
     event_loop: &winit::event_loop::ActiveEventLoop,
 ) {
+    use WinitEvent::*;
+    use winit::event::DeviceEvent::*;
     use winit::event::WindowEvent::*;
 
-    match &event {
-        CloseRequested => event_loop.exit(),
+    match event {
+        Window(CloseRequested) => event_loop.exit(),
 
-        Resized(window_size) => {
+        Window(Resized(window_size)) => {
             gui.backend.display.resize((*window_size).into());
         }
 
-        RedrawRequested => process_frame(gui, app),
+        Window(RedrawRequested) => process_frame(gui, app),
 
-        KeyboardInput {
+        Window(Focused(_)) => gui.backend.set_cursor_captured(false),
+
+        Window(KeyboardInput {
             event,
             is_synthetic,
             ..
-        } => {
+        }) => {
             if !is_synthetic {
-                app.on_input(super::Input::Keyboard(event));
+                app.on_input(super::Input::Keyboard(event), gui);
             }
+        }
+
+        Device(MouseMotion { delta: (x, y) }) => {
+            app.on_input(
+                super::Input::CapturedCursorMove {
+                    displacement: Vec2::new(*x as Float, *y as Float),
+                },
+                gui,
+            );
         }
 
         _ => (),
@@ -133,6 +165,46 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
             .finish()
             .expect("OpenGL drawing sequence failed");
     });
+}
+
+impl Gui {
+    pub fn set_cursor_captured(&mut self, captured: bool) {
+        self.cursor_capture_wanted = captured;
+        self.apply_cursor_capture_mode();
+    }
+
+    pub fn cursor_captured(&self) -> bool {
+        self.cursor_capture_wanted
+    }
+
+    fn apply_cursor_capture_mode(&mut self) {
+        use winit::window::CursorGrabMode::*;
+
+        let cursor_should_be_captured = self.cursor_capture_wanted && self.window.has_focus();
+        if self.cursor_actually_captured == cursor_should_be_captured {
+            return;
+        }
+
+        if cursor_should_be_captured {
+            self.window
+                .set_cursor_grab(Locked)
+                .or_else(|e| {
+                    if let winit::error::ExternalError::NotSupported(_) = e {
+                        self.window.set_cursor_grab(Confined)
+                    } else {
+                        Err(e)
+                    }
+                })
+                .expect("Could not grab cursor")
+        } else {
+            self.window
+                .set_cursor_grab(None)
+                .expect("Could not release cursor grab")
+        }
+
+        self.window.set_cursor_visible(!cursor_should_be_captured);
+        self.cursor_actually_captured = cursor_should_be_captured;
+    }
 }
 
 /// The super::DrawContext implementation for the Glium backend.

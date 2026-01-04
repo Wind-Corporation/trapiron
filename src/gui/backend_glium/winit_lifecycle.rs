@@ -155,7 +155,34 @@ where
         }
 
         crate::crash::with_context(("Current winit (GUI) event", || &event), || {
-            super::handle_event(gui, user_app, &event, event_loop);
+            super::handle_event(gui, user_app, super::WinitEvent::Window(&event), event_loop);
+        });
+    }
+
+    fn device_event(
+        &mut self,
+        event_loop: &ActiveEventLoop,
+        _device_id: winit::event::DeviceId,
+        event: winit::event::DeviceEvent,
+    ) {
+        let ApplicationState::Running {
+            ref mut user_app,
+            ref mut gui,
+        } = self.state
+        else {
+            return;
+        };
+
+        if !gui.backend.window.has_focus() {
+            return;
+        }
+
+        if !gui.cursor_captured() {
+            return;
+        }
+
+        crate::crash::with_context(("Current winit (GUI) event", || &event), || {
+            super::handle_event(gui, user_app, super::WinitEvent::Device(&event), event_loop);
         });
     }
 

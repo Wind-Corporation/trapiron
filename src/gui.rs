@@ -59,8 +59,17 @@ impl Gui {
     }
 
     /// Returns the start time of the application; more precisely, the instant this Gui was created.
-    pub fn start_time(&mut self) -> std::time::Instant {
+    pub fn start_time(&self) -> std::time::Instant {
         self.start_time
+    }
+
+    /// Whether cursor, if any, should be "captured" rather than visible.
+    pub fn cursor_captured(&self) -> bool {
+        self.backend.cursor_captured()
+    }
+
+    pub fn set_cursor_captured(&mut self, captured: bool) {
+        self.backend.set_cursor_captured(captured);
     }
 }
 
@@ -112,11 +121,12 @@ pub use draw::{Dcf, Drawable};
 /// ## See also
 /// backend::run
 pub trait Application: draw::Drawable {
-    fn on_input(&mut self, input: Input);
+    fn on_input(&mut self, input: Input, gui: &mut Gui);
 }
 
 pub enum Input<'a> {
     Keyboard(&'a winit::event::KeyEvent),
+    CapturedCursorMove { displacement: Vec2 },
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -213,8 +223,8 @@ impl OpaqueColor {
         Self(rgb)
     }
 
-    const WHITE: OpaqueColor = OpaqueColor::rgb(Vec3::ONE);
-    const BLACK: OpaqueColor = OpaqueColor::rgb(Vec3::ZERO);
+    pub const WHITE: OpaqueColor = OpaqueColor::rgb(Vec3::ONE);
+    pub const BLACK: OpaqueColor = OpaqueColor::rgb(Vec3::ZERO);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

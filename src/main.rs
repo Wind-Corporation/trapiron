@@ -19,8 +19,8 @@ impl MyApplication {
 }
 
 impl gui::Application for MyApplication {
-    fn on_input(&mut self, input: gui::Input) {
-        self.game.on_input(input);
+    fn on_input(&mut self, input: gui::Input, gui: &mut gui::Gui) {
+        self.game.on_input(input, gui);
     }
 }
 
