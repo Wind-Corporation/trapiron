@@ -34,15 +34,9 @@ pub struct Gui {
 
     /// Whether cursor, if any, should be "captured" rather than visible.
     ///
-    /// This reflects the desired state of capture according to application logic. The cursor is
-    /// released on focus loss and other similar events.
-    ///
     /// See https://github.com/rust-windowing/winit/issues/4222 for a reliability issue with this
     /// flag.
-    cursor_capture_wanted: bool,
-
-    /// Whether winit has been instructed to grab and hide the cursor.
-    cursor_actually_captured: bool,
+    cursor_captured: bool,
 }
 
 pub use winit_lifecycle::run;
@@ -71,8 +65,7 @@ impl Gui {
             program,
             display,
             window,
-            cursor_capture_wanted: false,
-            cursor_actually_captured: false,
+            cursor_captured: false,
         })
     }
 }
@@ -168,24 +161,18 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
 }
 
 impl Gui {
-    pub fn set_cursor_captured(&mut self, captured: bool) {
-        self.cursor_capture_wanted = captured;
-        self.apply_cursor_capture_mode();
-    }
-
     pub fn cursor_captured(&self) -> bool {
-        self.cursor_capture_wanted
+        self.cursor_captured
     }
 
-    fn apply_cursor_capture_mode(&mut self) {
+    pub fn set_cursor_captured(&mut self, captured: bool) {
         use winit::window::CursorGrabMode::*;
 
-        let cursor_should_be_captured = self.cursor_capture_wanted && self.window.has_focus();
-        if self.cursor_actually_captured == cursor_should_be_captured {
+        if self.cursor_captured == captured {
             return;
         }
 
-        if cursor_should_be_captured {
+        if captured {
             self.window
                 .set_cursor_grab(Locked)
                 .or_else(|e| {
@@ -202,8 +189,8 @@ impl Gui {
                 .expect("Could not release cursor grab")
         }
 
-        self.window.set_cursor_visible(!cursor_should_be_captured);
-        self.cursor_actually_captured = cursor_should_be_captured;
+        self.window.set_cursor_visible(!captured);
+        self.cursor_captured = captured;
     }
 }
 
