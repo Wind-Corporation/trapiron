@@ -23,10 +23,10 @@ impl Control {
         }
     }
 
-    pub fn fetch_into(&mut self, out: &mut Vec<Event>) {
+    pub fn fetch_into(&mut self, out: &mut VecDeque<Event>) {
         out.reserve(self.accumulator.len());
-        while let Some(event) = self.accumulator.pop_back() {
-            out.push(event);
+        while let Some(event) = self.accumulator.pop_front() {
+            out.push_back(event);
         }
     }
 

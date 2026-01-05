@@ -1,7 +1,10 @@
 mod control;
 mod view;
 
-use std::time::{Duration, Instant};
+use std::{
+    collections::VecDeque,
+    time::{Duration, Instant},
+};
 
 use crate::{
     client::{control::Control, view::View},
@@ -45,7 +48,7 @@ pub struct Game {
     control: Control,
     logic: Logic,
 
-    buffered_events: Vec<Event>,
+    buffered_events: VecDeque<Event>,
 
     logic_ticks: TickStats,
     presentation_ticks: TickStats,
@@ -65,7 +68,7 @@ impl Game {
             control: Control::new(),
             logic: Logic::new(),
 
-            buffered_events: Vec::with_capacity(256),
+            buffered_events: VecDeque::with_capacity(256),
 
             logic_ticks: TickStats {
                 last_duration: target_tick_duration(),
@@ -98,7 +101,7 @@ impl Game {
         crate::crash::with_context(("Tick phase", || "logic"), || {
             self.logic_ticks.start_tick(now);
 
-            while let Some(event) = self.buffered_events.pop() {
+            while let Some(event) = self.buffered_events.pop_front() {
                 self.world.process(event, &self.logic);
             }
 
@@ -112,14 +115,14 @@ impl Game {
         crate::crash::with_context(("Tick phase", || "presentation"), || {
             self.presentation_ticks.start_tick(now);
 
-            let new_events_begin = self.buffered_events.len();
-            self.buffered_events.push(Event::PresentationTick {
+            let prefix = self.buffered_events.len();
+            self.buffered_events.push_back(Event::PresentationTick {
                 duration: self.presentation_ticks.last_duration,
             });
             self.control.fetch_into(&mut self.buffered_events);
-            let new_events_end = self.buffered_events.len();
+            let count = self.buffered_events.len() - prefix;
 
-            for event in &self.buffered_events[new_events_begin..new_events_end] {
+            for event in self.buffered_events.iter().skip(prefix).take(count) {
                 self.world.process_presentation(event, &self.logic);
             }
 
