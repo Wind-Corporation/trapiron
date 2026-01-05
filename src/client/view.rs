@@ -1,8 +1,11 @@
+//! Graphical presentation of [`World`].
+
 use crate::{
     gui::{Affine3, Drawable, Float, Mat4, OpaqueColor, Vec3},
     world::World,
 };
 
+/// Renderer of [`World`], including 3D model and HUD controlled by simulation.
 pub struct View {
     rect: crate::gui::Primitive,
     cube: crate::gui::Primitive,

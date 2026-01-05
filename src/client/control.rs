@@ -1,3 +1,5 @@
+//! Intepretation of GUI inputs as simulation controls.
+
 use std::{collections::VecDeque, f32::consts::PI};
 
 use winit::{
@@ -7,11 +9,19 @@ use winit::{
 
 use crate::world::{Event, Vec2, Vec3};
 
+/// Logic and state of an interpreter of GUI inputs as in-game controls.
+///
+/// For example, converts a spacebar keystroke or a X controller button press into a jump input.
 #[derive(Default)]
 pub struct Control {
+    /// Desired movement direction in camera frame of reference according to observed keyboard
+    /// inputs.
     keyboard_camera_move_state: Vec3,
+
+    /// tmp: this should not be an event, it's a presentation setting like FoV or gamma
     mouse_camera_rotate_state: Vec2,
 
+    /// tmp
     accumulator: VecDeque<Event>,
 }
 
@@ -23,6 +33,7 @@ impl Control {
         }
     }
 
+    /// Move accumulated events out to the back of _out_.
     pub fn fetch_into(&mut self, out: &mut VecDeque<Event>) {
         out.reserve(self.accumulator.len());
         while let Some(event) = self.accumulator.pop_front() {
@@ -30,6 +41,10 @@ impl Control {
         }
     }
 
+    /// Process a GUI _input_ and interpret it as a game control if applicable.
+    ///
+    /// Stores resulting control [events](Event) in an internal buffer, to be picked up later during
+    /// [`fetch_into`](Self::fetch_into).
     pub fn on_input(&mut self, input: crate::gui::Input, gui: &mut crate::gui::Gui) {
         use crate::gui::Input::*;
 

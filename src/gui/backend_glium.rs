@@ -70,6 +70,7 @@ impl Gui {
     }
 }
 
+/// winit delivers window and device events differently, but it's all the same for our purposes.
 enum WinitEvent<'a> {
     Window(&'a winit::event::WindowEvent),
     Device(&'a winit::event::DeviceEvent),
@@ -98,7 +99,17 @@ fn handle_event(
 
         Window(RedrawRequested) => process_frame(gui, app),
 
-        Window(Focused(_)) => gui.backend.set_cursor_captured(false),
+        Window(Focused(focused)) => {
+            if *focused {
+                // I got weird errors on X11 when trying to restore a captured cursor on re-focus if
+                // the title of the window was clicked. Besides, the game should pause when it loses
+                // focus.
+                gui.backend.set_cursor_captured(false);
+            } else {
+                // Return full control to the user
+                gui.backend.set_cursor_captured(false);
+            }
+        }
 
         Window(KeyboardInput {
             event,

@@ -1,3 +1,7 @@
+//! Parts of the game that only make sense with a GUI.
+//!
+//! Compare [`crate::world`] and [`crate::logic`] that can be used headless.
+
 mod control;
 mod view;
 
@@ -13,19 +17,38 @@ use crate::{
     world::{Event, World},
 };
 
+/// Generalized statistics tracker for the two types of regular update routines: logic ticks and
+/// presentation ticks.
+///
+/// It should be informed about beginning and end of each tick so it can compute various useful
+/// properties such as tick duration.
+///
+/// Even though the processing of a tick takes time, each tick represents an instant.
 struct TickStats {
+    /// Duration of the last tick measured from end of penultimate tick to end of last tick.
     last_duration: Duration,
+
+    /// The instant of the last tick that occurred, if any.
     last_timestamp: Option<Instant>,
+
+    /// Number of ticks fully processed. Zero before and during first tick.
     completed: u64,
 }
 
+/// Desired realtime duration of a logic tick.
+pub fn target_tick_duration() -> Duration {
+    Duration::from_secs(1) / crate::world::TARGET_TPS
+}
+
 impl TickStats {
+    /// Report that processing of a tick representing instant _now_ has begun.
     pub fn start_tick(&mut self, now: Instant) {
         if let Some(time) = self.last_timestamp {
             self.last_duration = now - time;
         };
     }
 
+    /// Report that processing of a tick representing instant _now_ has ended.
     pub fn end_tick(&mut self, now: Instant) {
         self.last_timestamp = Some(now);
         self.completed += 1;
@@ -42,25 +65,22 @@ impl Default for TickStats {
     }
 }
 
+/// An active play session in a world, controlled and presented in realtime with GUI.
 pub struct Game {
     world: World,
     view: View,
     control: Control,
     logic: Logic,
 
+    /// Events accumulated since last logic tick, to be processed during next logic tick.
     buffered_events: VecDeque<Event>,
 
     logic_ticks: TickStats,
     presentation_ticks: TickStats,
 }
 
-pub const TARGET_TPS: u32 = 20;
-
-pub fn target_tick_duration() -> Duration {
-    Duration::from_secs(1) / TARGET_TPS
-}
-
 impl Game {
+    /// tmp: should accept World and Logic externally probably
     pub fn new(gui: &mut crate::gui::Gui) -> Self {
         Self {
             world: World::new(),
@@ -81,6 +101,10 @@ impl Game {
         }
     }
 
+    /// Run at least one presentation tick and possibly some logic ticks to advance simulation to
+    /// _now_.
+    ///
+    /// Should be called exactly once per frame.
     pub fn tick(&mut self, now: Instant) {
         crate::crash::with_context(("", || "Game tick"), || {
             loop {
@@ -97,6 +121,7 @@ impl Game {
         });
     }
 
+    /// Execute a single logic tick and flush [`Game::buffered_events`].
     fn tick_logic(&mut self, now: Instant) {
         crate::crash::with_context(("Tick phase", || "logic"), || {
             self.logic_ticks.start_tick(now);
@@ -111,6 +136,7 @@ impl Game {
         });
     }
 
+    /// Execute a single presentation tick and populate [`Game::buffered_events`] with new events.
     fn tick_presentation(&mut self, now: Instant) {
         crate::crash::with_context(("Tick phase", || "presentation"), || {
             self.presentation_ticks.start_tick(now);
@@ -130,6 +156,7 @@ impl Game {
         });
     }
 
+    /// React to GUI input.
     pub fn on_input(&mut self, input: crate::gui::Input, gui: &mut crate::gui::Gui) {
         self.control.on_input(input, gui);
     }

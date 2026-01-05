@@ -64,10 +64,23 @@ impl Gui {
     }
 
     /// Whether cursor, if any, should be "captured" rather than visible.
+    ///
+    /// In most graphical applications, cursor is not captured: it is visible to the user and free
+    /// to leave window bounds. It has a consistent absolute position on the screen, and its
+    /// movement is revealed with _TODO_, which accounts for cursor acceleration on touchpads, OS UI
+    /// scaling and other nuances.
+    ///
+    /// Cursor is captured when controlling a 3D camera and in similar applications. In this mode,
+    /// the cursor disappears and it no longer has a well-defined position. Raw, differential
+    /// physical movement is exposed via [`Input::CapturedCursorMove`] instead.
     pub fn cursor_captured(&self) -> bool {
         self.backend.cursor_captured()
     }
 
+    /// Request that cursor capture is enabled or disabled.
+    ///
+    /// Due to technical limitations and usability limitations on some platforms, cursor is
+    /// immediately released on any change in window focus.
     pub fn set_cursor_captured(&mut self, captured: bool) {
         self.backend.set_cursor_captured(captured);
     }
@@ -110,6 +123,28 @@ pub use draw::{Dcf, Drawable};
 // Application
 //
 
+/// An instance of user input, such as a keystroke.
+///
+/// Inputs are relayed to user code via `Application::on_input` one at a time.
+pub enum Input<'a> {
+    /// A keystroke. See `winit::event::KeyEvent` for more details.
+    Keyboard(&'a winit::event::KeyEvent),
+
+    /// Relative motion (somewhat equivalent to speed) of a mouse or a similar input device when the
+    /// [cursor is captured](Gui::cursor_captured).
+    ///
+    /// Does not fire unless cursor is captured.
+    ///
+    /// When cursor is captured, the cursor does not have a consistent position that keeps moving,
+    /// rather, only differential input is available. These values are much closer to physical
+    /// inputs made by the user and thus they are more suitable for tasks such as 3D camera
+    /// rotation.
+    CapturedCursorMove {
+        /// Direction and amplitude of input device motion in unspecified, consistent units.
+        displacement: Vec2,
+    },
+}
+
 /// A business logic container for the GUI.
 ///
 /// Objects of this type should directly or indirectly own all GUI-dependent resources such as
@@ -121,12 +156,11 @@ pub use draw::{Dcf, Drawable};
 /// ## See also
 /// backend::run
 pub trait Application: draw::Drawable {
+    /// Process a user input event.
+    ///
+    /// Zero or more inputs are delivered in between frame draw requests with the expectation that
+    /// input processing does not block.
     fn on_input(&mut self, input: Input, gui: &mut Gui);
-}
-
-pub enum Input<'a> {
-    Keyboard(&'a winit::event::KeyEvent),
-    CapturedCursorMove { displacement: Vec2 },
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

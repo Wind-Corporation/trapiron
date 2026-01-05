@@ -1,5 +1,7 @@
 # Trapiron
-_working title_
+
+A first-person puzzle platformer with mechanics from Minecraft and competitive spirit of TrackMania.
+Minecraft custom map genre of "escape rooms" made game with Rust and care.
 
 ## Build and run
 
@@ -12,4 +14,4 @@ cargo run    # Build if necessary, then run
 
 ---
 
-Copyright &copy; 2024 Wind Corporation. Licensed under GPLv3-or-later, see [LICENSE](LICENSE).
+Copyright &copy; 2024-2026 Wind Corporation. Licensed under GPLv3-or-later, see [LICENSE](LICENSE).
