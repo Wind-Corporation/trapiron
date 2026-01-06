@@ -33,12 +33,10 @@ impl Control {
         }
     }
 
-    /// Move accumulated events out to the back of _out_.
-    pub fn fetch_into(&mut self, out: &mut VecDeque<Event>) {
-        out.reserve(self.accumulator.len());
-        while let Some(event) = self.accumulator.pop_front() {
-            out.push_back(event);
-        }
+    /// Provides simulation events accumulated from processed inputs. Every event is only returned
+    /// by this method once.
+    pub fn pending_events(&mut self) -> impl Iterator<Item = Event> {
+        std::iter::from_fn(|| self.accumulator.pop_back())
     }
 
     /// Process a GUI _input_ and interpret it as a game control if applicable.

@@ -19,6 +19,9 @@
 //! _logic ticks_ for most game mechanics and _presentation ticks_ for a few properties that should
 //! ideally update every frame.
 //!
+//! Ticks represent an advancement of simulation time by some duration. Non-tick events occur
+//! instanteneously, though there is a well-defined order they occur in.
+//!
 //! **Logic ticks** occur with [fixed frequency (TPS)](TARGET_TPS) in simulation time. They are
 //! predictable to the player and happen rarely enough to be useful for implementing most game
 //! mechanics.
@@ -54,10 +57,10 @@ pub type Mat4 = glam::f32::Mat4;
 pub type Affine3 = glam::f32::Affine3A;
 
 /// A recorded change that can be applied to a [World].
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Event {
     /// A logic tick has occurred. Logic tick duration is fixed, see [`TARGET_TPS`].
-    Tick,
+    LogicTick,
 
     /// A presentation tick has occurred.
     PresentationTick {
@@ -74,6 +77,11 @@ pub enum Event {
 
 /// Expected number of logic ticks per simulation second.
 pub const TARGET_TPS: u32 = 20;
+
+/// Desired simulation duration of a logic tick.
+pub fn target_tick_duration() -> Duration {
+    std::time::Duration::from_secs(1) / crate::world::TARGET_TPS
+}
 
 /// tmp: camera should be bound to player OR noclip. Maybe even cutscenes.
 #[derive(Default)]
@@ -110,19 +118,9 @@ impl World {
     /// Process an event related to a logic tick.
     pub fn process(&mut self, event: Event, _logic: &Logic) {
         match event {
-            Event::Tick => (),
-            Event::MoveCamera { direction } => {
-                self.camera.control = direction;
-            }
-            _ => (),
-        }
-    }
-
-    /// Process an event related to a presentation tick.
-    pub fn process_presentation(&mut self, event: &Event, _logic: &Logic) {
-        match event {
+            Event::LogicTick => (),
             Event::PresentationTick { duration } => {
-                let dt = duration.as_secs_f32();
+                let dt: Float = duration.as_secs_f32();
 
                 const CONTROL_ACCELERATION: Float = 50.0;
                 const CONTROL_SPEED: Float = 5.0;
@@ -137,10 +135,12 @@ impl World {
                 self.camera.vel *= 0.25f32.powf(dt);
             }
             Event::RotateCamera { yaw, pitch } => {
-                self.camera.yaw = *yaw;
-                self.camera.pitch = *pitch;
+                self.camera.yaw = yaw;
+                self.camera.pitch = pitch;
             }
-            _ => (),
+            Event::MoveCamera { direction } => {
+                self.camera.control = direction;
+            }
         }
     }
 }

@@ -5,10 +5,7 @@
 mod control;
 mod view;
 
-use std::{
-    collections::VecDeque,
-    time::{Duration, Instant},
-};
+use std::time::{Duration, Instant};
 
 use crate::{
     client::{control::Control, view::View},
@@ -33,11 +30,6 @@ struct TickStats {
 
     /// Number of ticks fully processed. Zero before and during first tick.
     completed: u64,
-}
-
-/// Desired realtime duration of a logic tick.
-pub fn target_tick_duration() -> Duration {
-    Duration::from_secs(1) / crate::world::TARGET_TPS
 }
 
 impl TickStats {
@@ -72,9 +64,6 @@ pub struct Game {
     control: Control,
     logic: Logic,
 
-    /// Events accumulated since last logic tick, to be processed during next logic tick.
-    buffered_events: VecDeque<Event>,
-
     logic_ticks: TickStats,
     presentation_ticks: TickStats,
 }
@@ -88,13 +77,12 @@ impl Game {
             control: Control::new(),
             logic: Logic::new(),
 
-            buffered_events: VecDeque::with_capacity(256),
-
             logic_ticks: TickStats {
-                last_duration: target_tick_duration(),
+                last_duration: crate::world::target_tick_duration(),
                 ..Default::default()
             },
             presentation_ticks: TickStats {
+                // FPS is unknown during first frame, assume 60
                 last_duration: Duration::from_secs(1) / 60,
                 ..Default::default()
             },
@@ -109,7 +97,7 @@ impl Game {
         crate::crash::with_context(("", || "Game tick"), || {
             loop {
                 let last_logic_tick = *self.logic_ticks.last_timestamp.get_or_insert(now);
-                let next_logic_tick = last_logic_tick + target_tick_duration();
+                let next_logic_tick = last_logic_tick + crate::world::target_tick_duration();
                 if next_logic_tick >= now {
                     break;
                 }
@@ -125,13 +113,7 @@ impl Game {
     fn tick_logic(&mut self, now: Instant) {
         crate::crash::with_context(("Tick phase", || "logic"), || {
             self.logic_ticks.start_tick(now);
-
-            while let Some(event) = self.buffered_events.pop_front() {
-                self.world.process(event, &self.logic);
-            }
-
-            self.world.process(Event::Tick, &self.logic);
-
+            self.world.process(Event::LogicTick, &self.logic);
             self.logic_ticks.end_tick(now);
         });
     }
@@ -141,15 +123,12 @@ impl Game {
         crate::crash::with_context(("Tick phase", || "presentation"), || {
             self.presentation_ticks.start_tick(now);
 
-            let prefix = self.buffered_events.len();
-            self.buffered_events.push_back(Event::PresentationTick {
+            let presentation_tick = Event::PresentationTick {
                 duration: self.presentation_ticks.last_duration,
-            });
-            self.control.fetch_into(&mut self.buffered_events);
-            let count = self.buffered_events.len() - prefix;
+            };
 
-            for event in self.buffered_events.iter().skip(prefix).take(count) {
-                self.world.process_presentation(event, &self.logic);
+            for event in self.control.pending_events().chain([presentation_tick]) {
+                self.world.process(event, &self.logic);
             }
 
             self.presentation_ticks.end_tick(now);
