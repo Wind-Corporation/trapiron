@@ -13,6 +13,37 @@ pub struct View {
     animation_start: Option<std::time::Instant>,
 }
 
+/// Possible configurations for camera anchor and view angle.
+pub enum Camera {
+    /// A detached camera controlled entirely by presentation.
+    Free {
+        /// Absolute position in world.
+        position: crate::world::Vec3,
+        /// Rotation from world coordinate frame to camera frame of reference.
+        rotation: crate::gui::Quat,
+    },
+}
+
+impl Camera {
+    /// Determine position and rotation of the camera in world coordinate frame.
+    ///
+    /// Rotation is specified from world coordinate frame to camera frame of reference.
+    fn resolve(&self, _world: &World) -> (crate::gui::Vec3, crate::gui::Quat) {
+        match self {
+            Camera::Free { position, rotation } => (*position, *rotation),
+        }
+    }
+}
+
+/// Dynamically configurable settings for rendering a single frame.
+pub struct Parameters {
+    /// Camera anchor and view angle.
+    pub camera: Camera,
+    /// Horizontal field of view in radians. Vertical field of view is determined based on frame
+    /// aspect ratio.
+    pub fov: crate::gui::Float,
+}
+
 const BLOCK_TEXTURES: crate::gui::TextureGroup = crate::gui::TextureGroup {};
 
 impl View {
@@ -60,7 +91,7 @@ fn remap_depth(new_min: Float, new_max: crate::gui::Float) -> Mat4 {
 }
 
 impl View {
-    pub fn draw(&mut self, dcf: &mut crate::gui::Dcf, world: &World) {
+    pub fn draw(&mut self, dcf: &mut crate::gui::Dcf, world: &World, params: &Parameters) {
         // Draw 3D scene
 
         let t = self.animation_start.get_or_insert(*dcf.time());
@@ -68,14 +99,13 @@ impl View {
 
         let mut new_settings = dcf.settings().clone();
 
-        let fov = 75f32.to_radians();
         new_settings.screen_transform = remap_depth(0.1, 1.0) // takes up Z values 1.0 -> 0.1
-            * Mat4::perspective_rh(fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
+            * Mat4::perspective_rh(params.fov, dcf.size().x / dcf.size().y, 0.01, 100.0);
 
+        let (camera_pos, camera_rot) = params.camera.resolve(world);
         new_settings.view_transform = Affine3::look_at_rh(Vec3::ZERO, Vec3::X, Vec3::Z)
-            * Affine3::from_rotation_y(-world.camera.pitch)
-            * Affine3::from_rotation_z(-world.camera.yaw)
-            * Affine3::from_translation(-world.camera.pos);
+            * Affine3::from_quat(-camera_rot)
+            * Affine3::from_translation(-camera_pos);
 
         new_settings.lighting = crate::gui::draw::Lighting {
             ambient_color: OpaqueColor::rgb(Vec3::new(0.1, 0.15, 0.3)),

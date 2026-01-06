@@ -116,6 +116,12 @@ pub type Mat4 = glam::f32::Mat4;
 /// A Float 3x4 matrix vector (equivalent to mat4x3 in GLSL) for graphics computations.
 pub type Affine3 = glam::f32::Affine3A;
 
+/// A Float quaternion used to represent rotations for graphics computations.
+pub type Quat = glam::f32::Quat;
+
+/// A Float with value of PI.
+pub const PI: Float = std::f32::consts::PI;
+
 pub mod draw;
 pub use draw::{Dcf, Drawable};
 

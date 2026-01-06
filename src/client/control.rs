@@ -1,6 +1,6 @@
 //! Intepretation of GUI inputs as simulation controls.
 
-use std::{collections::VecDeque, f32::consts::PI};
+use std::collections::VecDeque;
 
 use winit::{
     event::{ElementState, KeyEvent},
@@ -85,15 +85,17 @@ impl Control {
             }
 
             CapturedCursorMove { displacement } => {
-                const SENSITIVITY: crate::gui::Float = 0.004;
+                use crate::gui::*;
+
+                const SENSITIVITY: Float = 0.004;
                 let yaw = &mut self.mouse_camera_rotate_state.x;
                 let pitch = &mut self.mouse_camera_rotate_state.y;
 
-                *yaw -= displacement.x * SENSITIVITY;
-                *yaw %= 2f32 * PI;
+                *yaw += displacement.x * SENSITIVITY;
+                *yaw %= 2.0 * PI;
 
                 *pitch += displacement.y * SENSITIVITY;
-                *pitch = pitch.clamp(-PI / 2f32, PI / 2f32);
+                *pitch = pitch.clamp(-PI / 2.0, crate::gui::PI / 2.0);
 
                 self.accumulator.push_back(Event::RotateCamera {
                     yaw: *yaw,

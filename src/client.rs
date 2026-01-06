@@ -144,7 +144,22 @@ impl Game {
 impl Drawable for Game {
     fn draw(&mut self, dcf: &mut Dcf) {
         crate::crash::with_context(("", || "Game draw"), || {
-            self.view.draw(dcf, &self.world);
+            self.view.draw(
+                dcf,
+                &self.world,
+                &view::Parameters {
+                    camera: view::Camera::Free {
+                        position: self.world.camera.pos,
+                        rotation: crate::gui::Quat::from_euler(
+                            glam::EulerRot::XYZ,
+                            0.0,
+                            self.world.camera.pitch,
+                            self.world.camera.yaw,
+                        ),
+                    },
+                    fov: (75.0 as crate::gui::Float).to_radians(),
+                },
+            );
         });
     }
 }

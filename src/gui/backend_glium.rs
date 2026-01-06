@@ -124,7 +124,7 @@ fn handle_event(
         Device(MouseMotion { delta: (x, y) }) => {
             app.on_input(
                 super::Input::CapturedCursorMove {
-                    displacement: Vec2::new(*x as Float, *y as Float),
+                    displacement: Vec2::new(*x as Float, -1.0 * *y as Float),
                 },
                 gui,
             );

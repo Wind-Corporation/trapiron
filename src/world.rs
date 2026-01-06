@@ -125,7 +125,7 @@ impl World {
                 const CONTROL_ACCELERATION: Float = 50.0;
                 const CONTROL_SPEED: Float = 5.0;
                 let target =
-                    Mat3::from_rotation_z(self.camera.yaw) * self.camera.control * CONTROL_SPEED;
+                    Mat3::from_rotation_z(-self.camera.yaw) * self.camera.control * CONTROL_SPEED;
 
                 let dv = target - self.camera.vel;
                 let dv = dv.clamp_length_max(CONTROL_ACCELERATION * dt);
