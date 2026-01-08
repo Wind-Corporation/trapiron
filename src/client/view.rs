@@ -14,6 +14,7 @@ pub struct View {
 }
 
 /// Possible configurations for camera anchor and view angle.
+#[derive(Debug, Clone)]
 pub enum Camera {
     /// A detached camera controlled entirely by presentation.
     Free {
@@ -36,6 +37,7 @@ impl Camera {
 }
 
 /// Dynamically configurable settings for rendering a single frame.
+#[derive(Debug, Clone)]
 pub struct Parameters {
     /// Camera anchor and view angle.
     pub camera: Camera,

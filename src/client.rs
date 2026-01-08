@@ -61,6 +61,7 @@ impl Default for TickStats {
 pub struct Game {
     world: World,
     view: View,
+    view_settings: view::Parameters,
     control: Control,
     logic: Logic,
 
@@ -74,6 +75,13 @@ impl Game {
         Self {
             world: World::new(),
             view: View::new(gui),
+            view_settings: view::Parameters {
+                camera: view::Camera::Free {
+                    position: crate::world::Vec3::ZERO,
+                    rotation: Default::default(),
+                },
+                fov: (75.0 as crate::gui::Float).to_radians(),
+            },
             control: Control::new(),
             logic: Logic::new(),
 
@@ -144,22 +152,11 @@ impl Game {
 impl Drawable for Game {
     fn draw(&mut self, dcf: &mut Dcf) {
         crate::crash::with_context(("", || "Game draw"), || {
-            self.view.draw(
-                dcf,
-                &self.world,
-                &view::Parameters {
-                    camera: view::Camera::Free {
-                        position: self.world.camera.pos,
-                        rotation: crate::gui::Quat::from_euler(
-                            glam::EulerRot::XYZ,
-                            0.0,
-                            self.world.camera.pitch,
-                            self.world.camera.yaw,
-                        ),
-                    },
-                    fov: (75.0 as crate::gui::Float).to_radians(),
-                },
-            );
+            let mut parameters = self.view_settings.clone();
+            let view::Camera::Free { position, .. } = &mut parameters.camera;
+            *position = self.world.camera.pos;
+            self.control.tweak_view_parameters(&mut parameters);
+            self.view.draw(dcf, &self.world, &parameters);
         });
     }
 }

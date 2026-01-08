@@ -56,6 +56,17 @@ pub type Mat4 = glam::f32::Mat4;
 /// A Float 3x4 matrix vector (equivalent to mat4x3 in GLSL) for world state.
 pub type Affine3 = glam::f32::Affine3A;
 
+/// Euclidean angles yaw and pitch.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct YawPitch {
+    /// Left-to-right rotation, with negative values to the left and positive values to the right.
+    pub yaw: Float,
+
+    /// Down-to-up rotation, with negative values downwards and positive values upwards;
+    /// zero corresponds to horizontal.
+    pub pitch: Float,
+}
+
 /// A recorded change that can be applied to a [World].
 #[derive(Debug, Clone)]
 pub enum Event {
@@ -71,8 +82,8 @@ pub enum Event {
     /// tmp
     MoveCamera { direction: Vec3 },
 
-    /// tmp: this should not be an event, it's a presentation setting like FoV or gamma
-    RotateCamera { yaw: Float, pitch: Float },
+    /// tmp
+    SetCameraRotation { rotation: YawPitch },
 }
 
 /// Expected number of logic ticks per simulation second.
@@ -87,8 +98,7 @@ pub fn target_tick_duration() -> Duration {
 #[derive(Default)]
 pub struct Camera {
     pub pos: Vec3,
-    pub yaw: Float,
-    pub pitch: Float,
+    pub rotation: YawPitch,
     pub vel: Vec3,
 
     /// Target velocity in camera frame of reference
@@ -124,19 +134,20 @@ impl World {
 
                 const CONTROL_ACCELERATION: Float = 50.0;
                 const CONTROL_SPEED: Float = 5.0;
-                let target =
-                    Mat3::from_rotation_z(-self.camera.yaw) * self.camera.control * CONTROL_SPEED;
+
+                let target = Mat3::from_rotation_z(-self.camera.rotation.yaw)
+                    * self.camera.control
+                    * CONTROL_SPEED;
 
                 let dv = target - self.camera.vel;
                 let dv = dv.clamp_length_max(CONTROL_ACCELERATION * dt);
                 self.camera.vel += dv;
 
                 self.camera.pos += self.camera.vel * dt;
-                self.camera.vel *= 0.25f32.powf(dt);
+                self.camera.vel *= (0.25 as Float).powf(dt);
             }
-            Event::RotateCamera { yaw, pitch } => {
-                self.camera.yaw = yaw;
-                self.camera.pitch = pitch;
+            Event::SetCameraRotation { rotation } => {
+                self.camera.rotation = rotation;
             }
             Event::MoveCamera { direction } => {
                 self.camera.control = direction;
