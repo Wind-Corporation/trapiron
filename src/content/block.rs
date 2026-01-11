@@ -14,6 +14,7 @@
 //!   - [`Block`]\: an enum of every possible `Instance` for dispatch.
 
 mod basic;
+mod pusher;
 
 use std::rc::Rc;
 
@@ -22,6 +23,7 @@ use crate::{
     gui::{Drawable, Gui, Primitive, Texture},
 };
 use basic::*;
+use pusher::*;
 
 /// Serialized representation of a single block. Kind identifier is not included.
 pub struct Serialized(pub u32);
