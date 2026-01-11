@@ -2,6 +2,38 @@
 
 use crate::content::block::*;
 
+pub struct AirKind;
+
+impl KindInstance for AirKind {
+    fn new(_: &mut Gui) -> Self {
+        Self
+    }
+}
+
+pub struct AirView;
+
+impl ViewInstance for AirView {}
+impl Drawable for AirView {
+    fn draw(&mut self, _: &mut crate::gui::Dcf) {
+        // Do nothing
+    }
+}
+
+pub struct Air;
+
+impl Instance for Air {
+    type Kind = AirKind;
+    type View = AirView;
+    fn view(&self, _: &Self::Kind) -> Self::View {
+        AirView
+    }
+    fn from(_: &Serialized) -> Self {
+        Self {}
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 pub struct StoneKind {
     model: FullCube,
 }

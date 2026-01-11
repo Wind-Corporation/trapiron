@@ -208,7 +208,14 @@ macro_rules! all_blocks {
     };
 }
 
+impl Default for Block {
+    fn default() -> Self {
+        Self::Air(Air)
+    }
+}
+
 all_blocks! {
-    stone: Stone,
+    air: Air,
     sand: Sand,
+    stone: Stone,
 }

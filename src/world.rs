@@ -137,7 +137,7 @@ impl World {
                 ],
                 [
                     [block("stone"), block("stone")],
-                    [block("stone"), block("stone")],
+                    [block("stone"), block("air")],
                 ],
             ],
             camera: Default::default(),
