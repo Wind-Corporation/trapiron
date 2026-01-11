@@ -35,16 +35,23 @@ impl Instance for Air {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct PusherKind {
-    model: PusherView,
+    model_inactive: PusherView,
+    model_active: PusherView,
 }
 
 impl KindInstance for PusherKind {
     fn new(gui: &mut Gui) -> Self {
         let texture = gui.texture(&TEXTURES.id("pusher"));
-        let mesh = crate::gui::asset::load_mesh("pusher");
-        let primitive = Rc::new(gui.make_primitive(vec![mesh.bind(texture)]));
+
+        let mut model = |name: &str| {
+            let mesh = crate::gui::asset::load_mesh(name);
+            let primitive = Rc::new(gui.make_primitive(vec![mesh.bind(texture.clone())]));
+            PusherView(primitive)
+        };
+
         Self {
-            model: PusherView(primitive),
+            model_inactive: model("pusher_inactive"),
+            model_active: model("pusher_active"),
         }
     }
 }
@@ -59,16 +66,28 @@ impl Drawable for PusherView {
     }
 }
 
-pub struct Pusher;
+pub enum Pusher {
+    Empty,
+    Active,
+}
 
 impl Instance for Pusher {
     type Kind = PusherKind;
     type View = PusherView;
+
     fn view(&self, rsrc: &Self::Kind) -> Self::View {
-        rsrc.model.clone()
+        match self {
+            Self::Empty => rsrc.model_inactive.clone(),
+            Self::Active => rsrc.model_active.clone(),
+        }
     }
-    fn from(_: &Serialized) -> Self {
-        Self {}
+
+    fn from(data: &Serialized) -> Self {
+        if data.0 == 0 {
+            Self::Empty
+        } else {
+            Self::Active
+        }
     }
 }
 

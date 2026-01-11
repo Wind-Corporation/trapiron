@@ -21,7 +21,7 @@ use crate::gui::{Drawable, Gui, Primitive, Texture};
 use basic::*;
 
 /// Serialized representation of a single block. Kind identifier is not included.
-pub struct Serialized;
+pub struct Serialized(pub u32);
 
 /// A single type of block, such as "stone" or "sand".
 ///

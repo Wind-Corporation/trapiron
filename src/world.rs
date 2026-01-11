@@ -125,7 +125,7 @@ impl World {
     /// tmp
     pub fn new(rsrc: &Resources) -> Self {
         let block = |name: &str| {
-            let serialized = content::block::Serialized;
+            let serialized = content::block::Serialized(0);
             rsrc.blocks.get(name).unwrap().instantiate(&serialized)
         };
 
@@ -135,7 +135,16 @@ impl World {
                     [block("air"), block("pusher")],
                     [block("air"), block("air")],
                 ],
-                [[block("air"), block("air")], [block("air"), block("air")]],
+                [
+                    [block("air"), block("air")],
+                    [
+                        rsrc.blocks
+                            .get("pusher")
+                            .unwrap()
+                            .instantiate(&content::block::Serialized(1)),
+                        block("air"),
+                    ],
+                ],
             ],
             camera: Default::default(),
         }
