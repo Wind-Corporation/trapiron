@@ -34,6 +34,46 @@ impl Instance for Air {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+pub struct PusherKind {
+    model: PusherView,
+}
+
+impl KindInstance for PusherKind {
+    fn new(gui: &mut Gui) -> Self {
+        let texture = gui.texture(&TEXTURES.id("pusher"));
+        let mesh = crate::gui::asset::load_mesh("pusher");
+        let primitive = Rc::new(gui.make_primitive(vec![mesh.bind(texture)]));
+        Self {
+            model: PusherView(primitive),
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct PusherView(Rc<Primitive>);
+
+impl ViewInstance for PusherView {}
+impl Drawable for PusherView {
+    fn draw(&mut self, dcf: &mut crate::gui::Dcf) {
+        self.0.draw(dcf);
+    }
+}
+
+pub struct Pusher;
+
+impl Instance for Pusher {
+    type Kind = PusherKind;
+    type View = PusherView;
+    fn view(&self, rsrc: &Self::Kind) -> Self::View {
+        rsrc.model.clone()
+    }
+    fn from(_: &Serialized) -> Self {
+        Self {}
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 pub struct StoneKind {
     model: FullCube,
 }

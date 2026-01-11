@@ -132,13 +132,10 @@ impl World {
         Self {
             blocks: [
                 [
-                    [block("sand"), block("stone")],
-                    [block("stone"), block("stone")],
+                    [block("air"), block("pusher")],
+                    [block("air"), block("air")],
                 ],
-                [
-                    [block("stone"), block("stone")],
-                    [block("stone"), block("air")],
-                ],
+                [[block("air"), block("air")], [block("air"), block("air")]],
             ],
             camera: Default::default(),
         }

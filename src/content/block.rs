@@ -216,6 +216,7 @@ impl Default for Block {
 
 all_blocks! {
     air: Air,
+    pusher: Pusher,
     sand: Sand,
     stone: Stone,
 }
