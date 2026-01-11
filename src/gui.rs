@@ -230,8 +230,8 @@ impl Gui {
     ///
     /// The method panics if the texture could not be loaded. Texture loading may occur more than
     /// once during program runtime.
-    pub fn texture(&mut self, id: TextureId) -> Rc<Texture> {
-        if let Some(ref mut weak) = self.texture_registry.get(&id) {
+    pub fn texture(&mut self, id: &TextureId) -> Rc<Texture> {
+        if let Some(ref mut weak) = self.texture_registry.get(id) {
             if let Some(texture) = weak.upgrade() {
                 return texture;
             }
@@ -241,7 +241,8 @@ impl Gui {
         crate::crash::with_context(("Loading texture", || name), || {
             let image = asset::load_image(id.name);
             let texture = Rc::new(self.backend.make_texture(image, &id));
-            self.texture_registry.insert(id, Rc::downgrade(&texture));
+            self.texture_registry
+                .insert(id.clone(), Rc::downgrade(&texture));
             texture
         })
     }

@@ -1,4 +1,4 @@
-use crate::gui::{Dcf, Drawable, Float, Index, MeshWithTexture};
+use crate::gui::{Dcf, Float, Index, MeshWithTexture};
 use glium::Surface;
 use std::{ops::Deref, rc::Rc};
 
@@ -24,8 +24,8 @@ struct Part {
     texture: Rc<crate::gui::Texture>,
 }
 
-impl Drawable for Primitive {
-    fn draw(&mut self, dcf: &mut Dcf) {
+impl Primitive {
+    pub fn draw(&self, dcf: &mut Dcf) {
         let screen_transform = dcf.settings().screen_transform.to_cols_array_2d();
         let view_transform = dcf.settings().view_transform.to_cols_array_2d();
         let world_transform = dcf.state().world_transform.to_cols_array_2d();

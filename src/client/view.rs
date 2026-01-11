@@ -1,6 +1,7 @@
 //! Graphical presentation of [`World`].
 
 use crate::{
+    content::Resources,
     gui::{Affine3, Drawable, Float, Mat4, OpaqueColor, Vec3},
     world::World,
 };
@@ -8,7 +9,6 @@ use crate::{
 /// Renderer of [`World`], including 3D model and HUD controlled by simulation.
 pub struct View {
     rect: crate::gui::Primitive,
-    cube: crate::gui::Primitive,
     axes: crate::gui::Primitive,
     animation_start: Option<std::time::Instant>,
 }
@@ -50,23 +50,20 @@ const BLOCK_TEXTURES: crate::gui::TextureGroup = crate::gui::TextureGroup {};
 
 impl View {
     pub fn new(gui: &mut crate::gui::Gui) -> Self {
-        let texture = gui.texture(BLOCK_TEXTURES.id("test"));
+        let texture = gui.texture(&BLOCK_TEXTURES.id("test"));
         let rect = crate::gui::Mesh::square(1.0)
             .centered()
             .bind(texture.clone());
-        let cube =
-            crate::gui::Mesh::tmp_ppp(Vec3::splat(-0.5), Vec3::X, Vec3::Y, Vec3::Z, &texture);
 
         Self {
             rect: gui.make_primitive(vec![rect]),
-            cube: gui.make_primitive(cube),
             axes: crate::gui::debug::axes(gui),
             animation_start: None,
         }
     }
 }
 
-fn draw_spinning(object: &mut impl crate::gui::Drawable, t: f32, dcf: &mut crate::gui::Dcf) {
+fn draw_spinning(object: &crate::gui::Primitive, t: f32, dcf: &mut crate::gui::Dcf) {
     let dark = OpaqueColor::rgb(Vec3::new(0.1, 0.1, 0.15));
 
     let mut dcf = dcf.tfed(Affine3::from_rotation_z(t));
@@ -92,8 +89,26 @@ fn remap_depth(new_min: Float, new_max: crate::gui::Float) -> Mat4 {
     ])
 }
 
+fn draw_world(dcf: &mut crate::gui::Dcf, world: &World, rsrc: &Resources) {
+    for (x, plane) in world.blocks.iter().enumerate() {
+        for (y, line) in plane.iter().enumerate() {
+            for (z, block) in line.iter().enumerate() {
+                block
+                    .view(&rsrc.blocks)
+                    .draw(&mut dcf.shifted(Vec3::new(x as Float, y as Float, z as Float)));
+            }
+        }
+    }
+}
+
 impl View {
-    pub fn draw(&mut self, dcf: &mut crate::gui::Dcf, world: &World, params: &Parameters) {
+    pub fn draw(
+        &mut self,
+        dcf: &mut crate::gui::Dcf,
+        world: &World,
+        rsrc: &Resources,
+        params: &Parameters,
+    ) {
         // Draw 3D scene
 
         let t = self.animation_start.get_or_insert(*dcf.time());
@@ -129,12 +144,7 @@ impl View {
         self.rect
             .draw(&mut dcf.shifted(Vec3::Z * -3.0).scaled(Vec3::splat(10.0)));
 
-        self.cube.draw(
-            &mut dcf
-                .tfed(Affine3::from_rotation_z(t))
-                .tfed(Affine3::from_rotation_x(t * 1.3))
-                .tfed(Affine3::from_rotation_y(t * 0.7)),
-        );
+        draw_world(dcf, world, rsrc);
 
         // Draw 2D overlay
 

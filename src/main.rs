@@ -1,4 +1,7 @@
+use std::rc::Rc;
+
 pub mod client;
+pub mod content;
 pub mod crash;
 pub mod gui;
 pub mod logic;
@@ -10,10 +13,12 @@ struct MyApplication {
 
 impl MyApplication {
     fn new(gui: &mut gui::Gui) -> Self {
-        println!("My init!");
+        println!("Loading resources");
+        let resources = Rc::new(content::Resources::new(gui));
 
+        println!("Starting game");
         Self {
-            game: client::Game::new(gui),
+            game: client::Game::new(resources, gui),
         }
     }
 }

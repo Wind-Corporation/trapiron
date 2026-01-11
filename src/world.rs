@@ -33,7 +33,10 @@
 
 use std::time::Duration;
 
-use crate::logic::Logic;
+use crate::{
+    content::{self, Resources, block::Block},
+    logic::Logic,
+};
 
 /// The floating-point type used for world state.
 pub type Float = f32;
@@ -114,13 +117,29 @@ pub struct Camera {
 /// Updated by discrete events, including logic and presentation ticks. See module description for
 /// more details.
 pub struct World {
+    pub blocks: [[[Block; 2]; 2]; 2],
     pub camera: Camera,
 }
 
 impl World {
-    /// Create a new empty world.
-    pub fn new() -> Self {
+    /// tmp
+    pub fn new(rsrc: &Resources) -> Self {
+        let block = |name: &str| {
+            let serialized = content::block::Serialized;
+            rsrc.blocks.get(name).unwrap().instantiate(&serialized)
+        };
+
         Self {
+            blocks: [
+                [
+                    [block("sand"), block("stone")],
+                    [block("stone"), block("stone")],
+                ],
+                [
+                    [block("stone"), block("stone")],
+                    [block("stone"), block("stone")],
+                ],
+            ],
             camera: Default::default(),
         }
     }

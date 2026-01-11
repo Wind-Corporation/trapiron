@@ -131,8 +131,9 @@ impl Mesh {
 /// list, that has a set of textures associated with it.
 pub struct Primitive(pub(super) super::backend::Primitive);
 
-impl super::Drawable for Primitive {
-    fn draw(&mut self, dcf: &mut super::Dcf) {
+impl Primitive {
+    /// Draws this object using the provided draw context frame.
+    pub fn draw(&self, dcf: &mut super::Dcf) {
         self.0.draw(dcf);
     }
 }

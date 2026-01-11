@@ -5,10 +5,14 @@
 mod control;
 mod view;
 
-use std::time::{Duration, Instant};
+use std::{
+    rc::Rc,
+    time::{Duration, Instant},
+};
 
 use crate::{
     client::{control::Control, view::View},
+    content::Resources,
     gui::{Dcf, Drawable},
     logic::Logic,
     world::{Event, World},
@@ -65,15 +69,17 @@ pub struct Game {
     control: Control,
     logic: Logic,
 
+    resources: Rc<Resources>,
+
     logic_ticks: TickStats,
     presentation_ticks: TickStats,
 }
 
 impl Game {
     /// tmp: should accept World and Logic externally probably
-    pub fn new(gui: &mut crate::gui::Gui) -> Self {
+    pub fn new(resources: Rc<Resources>, gui: &mut crate::gui::Gui) -> Self {
         Self {
-            world: World::new(),
+            world: World::new(&resources),
             view: View::new(gui),
             view_settings: view::Parameters {
                 camera: view::Camera::Free {
@@ -84,6 +90,8 @@ impl Game {
             },
             control: Control::new(),
             logic: Logic::new(),
+
+            resources,
 
             logic_ticks: TickStats {
                 last_duration: crate::world::target_tick_duration(),
@@ -156,7 +164,8 @@ impl Drawable for Game {
             let view::Camera::Free { position, .. } = &mut parameters.camera;
             *position = self.world.camera.pos;
             self.control.tweak_view_parameters(&mut parameters);
-            self.view.draw(dcf, &self.world, &parameters);
+            self.view
+                .draw(dcf, &self.world, &self.resources, &parameters);
         });
     }
 }
