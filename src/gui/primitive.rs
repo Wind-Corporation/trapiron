@@ -277,26 +277,30 @@ impl Mesh {
         depth: Vec3,
         texture: &Rc<super::Texture>,
     ) -> Vec<MeshWithTexture> {
-        let min_origin = origin;
-        let max_origin = origin + width + height + depth;
         vec![
+            // Bottom
             Self::parallelogram(height, width)
-                .at(min_origin)
+                .at(origin)
                 .bind(texture.clone()),
+            // East
             Self::parallelogram(width, depth)
-                .at(min_origin)
+                .at(origin)
                 .bind(texture.clone()),
-            Self::parallelogram(depth, height)
-                .at(min_origin)
+            // South
+            Self::parallelogram(-height, depth)
+                .at(origin + height)
                 .bind(texture.clone()),
-            Self::parallelogram(-width, -height)
-                .at(max_origin)
+            // Top
+            Self::parallelogram(-height, width)
+                .at(origin + height + depth)
                 .bind(texture.clone()),
-            Self::parallelogram(-depth, -width)
-                .at(max_origin)
+            // West
+            Self::parallelogram(-width, depth)
+                .at(origin + width + height)
                 .bind(texture.clone()),
-            Self::parallelogram(-height, -depth)
-                .at(max_origin)
+            // North
+            Self::parallelogram(height, depth)
+                .at(origin + width)
                 .bind(texture.clone()),
         ]
     }
