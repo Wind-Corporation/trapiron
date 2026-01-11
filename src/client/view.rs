@@ -94,7 +94,7 @@ fn draw_world(dcf: &mut crate::gui::Dcf, world: &World, rsrc: &Resources) {
         for (y, line) in plane.iter().enumerate() {
             for (z, block) in line.iter().enumerate() {
                 block
-                    .view(&rsrc.blocks)
+                    .view(&rsrc)
                     .draw(&mut dcf.shifted(Vec3::new(x as Float, y as Float, z as Float)));
             }
         }

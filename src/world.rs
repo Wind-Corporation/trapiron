@@ -125,25 +125,25 @@ impl World {
     /// tmp
     pub fn new(rsrc: &Resources) -> Self {
         let block = |name: &str| {
-            let serialized = content::block::Serialized(0);
-            rsrc.blocks.get(name).unwrap().instantiate(&serialized)
+            // Wow, this must be the filthiest code I ever wrote
+            let ser = (name.chars().last().unwrap() as u32) - ('0' as u32);
+            let serialized = content::block::Serialized(ser);
+            let len = name.len();
+            rsrc.blocks
+                .get(&name[..len - 2])
+                .unwrap()
+                .instantiate(&serialized)
         };
 
         Self {
             blocks: [
                 [
-                    [block("air"), block("pusher")],
-                    [block("air"), block("air")],
+                    [block("stone:0"), block("pusher:0")],
+                    [block("stone:0"), block("pusher:2")],
                 ],
                 [
-                    [block("air"), block("air")],
-                    [
-                        rsrc.blocks
-                            .get("pusher")
-                            .unwrap()
-                            .instantiate(&content::block::Serialized(1)),
-                        block("air"),
-                    ],
+                    [block("stone:0"), block("pusher:1")],
+                    [block("sand:0"), block("air:0")],
                 ],
             ],
             camera: Default::default(),

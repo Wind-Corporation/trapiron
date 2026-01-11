@@ -17,7 +17,10 @@ mod basic;
 
 use std::rc::Rc;
 
-use crate::gui::{Drawable, Gui, Primitive, Texture};
+use crate::{
+    content::Resources,
+    gui::{Drawable, Gui, Primitive, Texture},
+};
 use basic::*;
 
 /// Serialized representation of a single block. Kind identifier is not included.
@@ -59,7 +62,7 @@ pub trait Instance {
     ///
     /// This method should execute quickly to avoid lag. Cache all expensive computation in `Kind`;
     /// for many block kinds, the entire view can be pre-initialized and shared via [`Rc`].
-    fn view(&self, rsrc: &Self::Kind) -> Self::View;
+    fn view(&self, kind: &Self::Kind, rsrc: &Resources) -> Self::View;
 
     /// Deserialize `Self`.
     fn from(data: &Serialized) -> Self;
@@ -162,11 +165,11 @@ macro_rules! all_blocks {
             /// Obtain a view for this block state.
             ///
             /// The view will have the state of this block baked into it.
-            pub fn view(&self, types: &Kinds) -> View {
+            pub fn view(&self, rsrc: &Resources) -> View {
                 match self {
                     $(
                         Block::$title_case(instance) => {
-                            View::$title_case(instance.view(&types.$snake_case))
+                            View::$title_case(instance.view(&rsrc.blocks.$snake_case, rsrc))
                         }
                     )*
                 }

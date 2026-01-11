@@ -24,7 +24,7 @@ pub struct Air;
 impl Instance for Air {
     type Kind = AirKind;
     type View = AirView;
-    fn view(&self, _: &Self::Kind) -> Self::View {
+    fn view(&self, _: &Self::Kind, _: &Resources) -> Self::View {
         AirView
     }
     fn from(_: &Serialized) -> Self {
@@ -35,8 +35,8 @@ impl Instance for Air {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 pub struct PusherKind {
-    model_inactive: PusherView,
-    model_active: PusherView,
+    model_compressed: Rc<Primitive>,
+    model_extended: Rc<Primitive>,
 }
 
 impl KindInstance for PusherKind {
@@ -45,48 +45,57 @@ impl KindInstance for PusherKind {
 
         let mut model = |name: &str| {
             let mesh = crate::gui::asset::load_mesh(name);
-            let primitive = Rc::new(gui.make_primitive(vec![mesh.bind(texture.clone())]));
-            PusherView(primitive)
+            Rc::new(gui.make_primitive(vec![mesh.bind(texture.clone())]))
         };
 
         Self {
-            model_inactive: model("pusher_inactive"),
-            model_active: model("pusher_active"),
+            model_compressed: model("pusher_compressed"),
+            model_extended: model("pusher_extended"),
         }
     }
 }
 
-#[derive(Clone)]
-pub struct PusherView(Rc<Primitive>);
+pub struct PusherView {
+    pusher: Rc<Primitive>,
+    contents: Box<View>,
+}
 
 impl ViewInstance for PusherView {}
 impl Drawable for PusherView {
     fn draw(&mut self, dcf: &mut crate::gui::Dcf) {
-        self.0.draw(dcf);
+        self.pusher.draw(dcf);
+        self.contents
+            .draw(&mut dcf.scaled(crate::gui::Vec3::splat(0.5)));
     }
 }
 
 pub enum Pusher {
-    Empty,
-    Active,
+    Holds(Box<Block>),
+    Extended,
 }
 
 impl Instance for Pusher {
     type Kind = PusherKind;
     type View = PusherView;
 
-    fn view(&self, rsrc: &Self::Kind) -> Self::View {
+    fn view(&self, kind: &Self::Kind, rsrc: &Resources) -> Self::View {
         match self {
-            Self::Empty => rsrc.model_inactive.clone(),
-            Self::Active => rsrc.model_active.clone(),
+            Self::Holds(contents) => Self::View {
+                pusher: kind.model_compressed.clone(),
+                contents: Box::new(contents.view(rsrc)),
+            },
+            Self::Extended => Self::View {
+                pusher: kind.model_extended.clone(),
+                contents: Box::new(View::Air(AirView)),
+            },
         }
     }
 
     fn from(data: &Serialized) -> Self {
-        if data.0 == 0 {
-            Self::Empty
-        } else {
-            Self::Active
+        match data.0 {
+            0 => Self::Holds(Box::new(Block::Air(Air))),
+            1 => Self::Holds(Box::new(Block::Sand(Sand))),
+            _ => Self::Extended,
         }
     }
 }
@@ -110,7 +119,7 @@ pub struct Stone;
 impl Instance for Stone {
     type Kind = StoneKind;
     type View = FullCube;
-    fn view(&self, rsrc: &Self::Kind) -> Self::View {
+    fn view(&self, rsrc: &Self::Kind, _: &Resources) -> Self::View {
         rsrc.model.clone()
     }
     fn from(_: &Serialized) -> Self {
@@ -137,7 +146,7 @@ pub struct Sand;
 impl Instance for Sand {
     type Kind = SandKind;
     type View = FullCube;
-    fn view(&self, rsrc: &Self::Kind) -> Self::View {
+    fn view(&self, rsrc: &Self::Kind, _: &Resources) -> Self::View {
         rsrc.model.clone()
     }
     fn from(_: &Serialized) -> Self {
