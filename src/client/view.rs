@@ -3,7 +3,7 @@
 use crate::{
     content::Resources,
     gui::{Affine3, Drawable, Float, Mat4, OpaqueColor, Vec3},
-    world::World,
+    world::{Level, World},
 };
 
 /// Renderer of [`World`], including 3D model and HUD controlled by simulation.
@@ -89,8 +89,11 @@ fn remap_depth(new_min: Float, new_max: crate::gui::Float) -> Mat4 {
     ])
 }
 
-fn draw_world(dcf: &mut crate::gui::Dcf, world: &World, rsrc: &Resources) {
-    for (x, plane) in world.blocks.iter().enumerate() {
+fn draw_level(dcf: &mut crate::gui::Dcf, level: &Level, rsrc: &Resources) {
+    let mut dcf = dcf.shifted(level.position);
+    let mut dcf = dcf.tfed(Affine3::from_rotation_z(level.yaw));
+
+    for (x, plane) in level.blocks.iter().enumerate() {
         for (y, line) in plane.iter().enumerate() {
             for (z, block) in line.iter().enumerate() {
                 block
@@ -144,7 +147,9 @@ impl View {
         self.rect
             .draw(&mut dcf.shifted(Vec3::Z * -3.0).scaled(Vec3::splat(10.0)));
 
-        draw_world(dcf, world, rsrc);
+        for level in &world.levels {
+            draw_level(dcf, level, rsrc);
+        }
 
         // Draw 2D overlay
 

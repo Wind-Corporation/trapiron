@@ -97,6 +97,42 @@ pub fn target_tick_duration() -> Duration {
     std::time::Duration::from_secs(1) / crate::world::TARGET_TPS
 }
 
+/// The state of a level: a portion of a [world](World) with a mutable block grid that can be
+/// attempted.
+pub struct Level {
+    pub blocks: [[[Block; 3]; 3]; 3],
+
+    /// Location of the origin of the level in world coordinates.
+    pub position: Vec3,
+
+    /// Rotation of the level coordinate system around Z axis. Applied after position.
+    pub yaw: Float,
+}
+
+impl Level {
+    /// tmp
+    pub fn new(rsrc: &Resources) -> Self {
+        let block = |name: &str| {
+            // Wow, this must be the filthiest code I ever wrote
+            let ser = (name.chars().last().unwrap() as u32) - ('0' as u32);
+            let serialized = content::block::Serialized(ser);
+            let len = name.len();
+            rsrc.blocks
+                .get(&name[..len - 2])
+                .unwrap()
+                .instantiate(&serialized)
+        };
+
+        let mut blocks: [[[Block; 3]; 3]; 3] = Default::default();
+        blocks[0][0][0] = block("stone:0");
+        Self {
+            blocks,
+            position: Vec3::new(0., 5., 0.),
+            yaw: 0.1,
+        }
+    }
+}
+
 /// tmp: camera should be bound to player OR noclip. Maybe even cutscenes.
 #[derive(Default)]
 pub struct Camera {
@@ -117,35 +153,15 @@ pub struct Camera {
 /// Updated by discrete events, including logic and presentation ticks. See module description for
 /// more details.
 pub struct World {
-    pub blocks: [[[Block; 2]; 2]; 2],
+    pub levels: Vec<Level>,
     pub camera: Camera,
 }
 
 impl World {
     /// tmp
     pub fn new(rsrc: &Resources) -> Self {
-        let block = |name: &str| {
-            // Wow, this must be the filthiest code I ever wrote
-            let ser = (name.chars().last().unwrap() as u32) - ('0' as u32);
-            let serialized = content::block::Serialized(ser);
-            let len = name.len();
-            rsrc.blocks
-                .get(&name[..len - 2])
-                .unwrap()
-                .instantiate(&serialized)
-        };
-
         Self {
-            blocks: [
-                [
-                    [block("stone:0"), block("pusher:0")],
-                    [block("stone:0"), block("pusher:2")],
-                ],
-                [
-                    [block("stone:0"), block("pusher:1")],
-                    [block("sand:0"), block("air:0")],
-                ],
-            ],
+            levels: vec![Level::new(rsrc)],
             camera: Default::default(),
         }
     }
