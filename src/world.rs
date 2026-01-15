@@ -31,6 +31,9 @@
 //! slow compared to FPS, without presentation ticks, certain interactions would have significant
 //! jerkiness or input lag.
 
+pub mod array3;
+pub mod vec_iter;
+
 use std::time::Duration;
 
 use crate::{
@@ -58,6 +61,9 @@ pub type Mat4 = glam::f32::Mat4;
 
 /// A Float 3x4 matrix vector (equivalent to mat4x3 in GLSL) for world state.
 pub type Affine3 = glam::f32::Affine3A;
+
+/// An unsigned integer 3D vector for world state.
+pub type UVec3 = glam::u32::UVec3;
 
 /// Euclidean angles yaw and pitch.
 #[derive(Debug, Clone, Copy, Default)]
