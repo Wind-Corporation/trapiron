@@ -93,14 +93,10 @@ fn draw_level(dcf: &mut crate::gui::Dcf, level: &Level, rsrc: &Resources) {
     let mut dcf = dcf.shifted(level.position);
     let mut dcf = dcf.tfed(Affine3::from_rotation_z(level.yaw));
 
-    for (x, plane) in level.blocks.iter().enumerate() {
-        for (y, line) in plane.iter().enumerate() {
-            for (z, block) in line.iter().enumerate() {
-                block
-                    .view(&rsrc)
-                    .draw(&mut dcf.shifted(Vec3::new(x as Float, y as Float, z as Float)));
-            }
-        }
+    for ((x, y, z), block) in level.blocks.indexed_iter() {
+        block
+            .view(&rsrc)
+            .draw(&mut dcf.shifted(Vec3::new(x as Float, y as Float, z as Float)));
     }
 }
 

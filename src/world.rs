@@ -36,6 +36,8 @@ pub mod vec_iter;
 
 use std::time::Duration;
 
+use ndarray::Array3;
+
 use crate::{
     content::{self, Resources, block::Block},
     logic::Logic,
@@ -106,7 +108,7 @@ pub fn target_tick_duration() -> Duration {
 /// The state of a level: a portion of a [world](World) with a mutable block grid that can be
 /// attempted.
 pub struct Level {
-    pub blocks: [[[Block; 3]; 3]; 3],
+    pub blocks: Array3<Block>,
 
     /// Location of the origin of the level in world coordinates.
     pub position: Vec3,
@@ -129,13 +131,24 @@ impl Level {
                 .instantiate(&serialized)
         };
 
-        let mut blocks: [[[Block; 3]; 3]; 3] = Default::default();
-        blocks[0][0][0] = block("stone:0");
-        Self {
-            blocks,
+        let mut result = Self {
+            blocks: Array3::from_shape_fn((10, 10, 10), |_| Default::default()),
             position: Vec3::new(0., 5., 0.),
             yaw: 0.1,
+        };
+
+        for x in 0..10 {
+            for y in 0..10 {
+                result.blocks[[x, y, 0]] = block("stone:0");
+                let dx = 5i32 - (x as i32);
+                let dy = 5i32 - (y as i32);
+                if dx * dx + dy * dy > 15 {
+                    result.blocks[[x, y, 1]] = block("sand:0");
+                }
+            }
         }
+
+        result
     }
 }
 
