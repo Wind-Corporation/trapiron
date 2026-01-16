@@ -163,25 +163,6 @@ macro_rules! position_iter {
 position_iter! {name: PositionIter, elem_iter: std::slice::Iter<'a, T>, ref: &'a T}
 position_iter! {name: PositionIterMut, elem_iter: std::slice::IterMut<'a, T>, ref: &'a mut T}
 
-macro_rules! iter {
-    (name: $name:ident, parent: $parent:ty, ref: $ref:ty) => {
-        pub struct $name<'a, T>($parent);
-
-        impl<'a, T> std::iter::Iterator for $name<'a, T> {
-            type Item = $ref;
-            fn next(&mut self) -> Option<Self::Item> {
-                Some(self.0.next()?.1)
-            }
-        }
-
-        impl<'a, T> std::iter::ExactSizeIterator for $name<'a, T> {
-            fn len(&self) -> usize {
-                self.0.len()
-            }
-        }
-    };
-}
-
 impl<T> Array3<T> {
     /// Iterate over all positions in `self`.
     ///
@@ -213,23 +194,21 @@ impl<T> Array3<T> {
     }
 }
 
-iter! {name: Iter, parent: PositionIter<'a, T>, ref: &'a T}
-iter! {name: IterMut, parent: PositionIterMut<'a, T>, ref: &'a mut T}
-
+/// Iteration over elements only.
 impl<'a, T> std::iter::IntoIterator for &'a Array3<T> {
     type Item = &'a T;
-    type IntoIter = Iter<'a, T>;
+    type IntoIter = std::slice::Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        Iter(self.pos_iter())
+        self.data.iter()
     }
 }
 
 impl<'a, T> std::iter::IntoIterator for &'a mut Array3<T> {
     type Item = &'a mut T;
-    type IntoIter = IterMut<'a, T>;
+    type IntoIter = std::slice::IterMut<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        IterMut(self.pos_iter_mut())
+        self.data.iter_mut()
     }
 }
