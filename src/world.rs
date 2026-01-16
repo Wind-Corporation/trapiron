@@ -36,11 +36,10 @@ pub mod vec_iter;
 
 use std::time::Duration;
 
-use ndarray::Array3;
-
 use crate::{
     content::{self, Resources, block::Block},
     logic::Logic,
+    world::vec_iter::VecIterators,
 };
 
 /// The floating-point type used for world state.
@@ -108,7 +107,7 @@ pub fn target_tick_duration() -> Duration {
 /// The state of a level: a portion of a [world](World) with a mutable block grid that can be
 /// attempted.
 pub struct Level {
-    pub blocks: Array3<Block>,
+    pub blocks: array3::Array3<Block>,
 
     /// Location of the origin of the level in world coordinates.
     pub position: Vec3,
@@ -132,19 +131,17 @@ impl Level {
         };
 
         let mut result = Self {
-            blocks: Array3::from_shape_fn((10, 10, 10), |_| Default::default()),
+            blocks: array3::Array3::default(UVec3::new(10, 10, 10)),
             position: Vec3::new(0., 5., 0.),
             yaw: 0.1,
         };
 
-        for x in 0..10 {
-            for y in 0..10 {
-                result.blocks[[x, y, 0]] = block("stone:0");
-                let dx = 5i32 - (x as i32);
-                let dy = 5i32 - (y as i32);
-                if dx * dx + dy * dy > 15 {
-                    result.blocks[[x, y, 1]] = block("sand:0");
-                }
+        for col in UVec3::ZERO.iter_box(&result.blocks.shape().with_z(1)) {
+            result.blocks[col.with_z(0)] = block("stone:0");
+            let dx = 5i32 - (col.x as i32);
+            let dy = 5i32 - (col.y as i32);
+            if dx * dx + dy * dy > 15 {
+                result.blocks[col.with_z(1)] = block("sand:0");
             }
         }
 
