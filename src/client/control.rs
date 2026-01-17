@@ -56,14 +56,8 @@ impl Control {
         use super::view::Camera::*;
 
         match &mut params.camera {
-            Free { rotation, .. } => {
-                *rotation = crate::gui::Quat::from_euler(
-                    glam::EulerRot::XYZ,
-                    0.0,
-                    self.last_camera_rotation.pitch,
-                    self.last_camera_rotation.yaw,
-                )
-            }
+            Free { rotation, .. } => *rotation = (&self.last_camera_rotation).into(),
+            PlayerCharacter => {}
         }
     }
 

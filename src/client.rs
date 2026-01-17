@@ -82,10 +82,7 @@ impl Game {
             world: World::new(&resources),
             view: View::new(gui),
             view_settings: view::Parameters {
-                camera: view::Camera::Free {
-                    position: crate::world::Vec3::ZERO,
-                    rotation: Default::default(),
-                },
+                camera: view::Camera::PlayerCharacter,
                 fov: (75.0 as crate::gui::Float).to_radians(),
             },
             control: Control::new(),
@@ -161,8 +158,6 @@ impl Drawable for Game {
     fn draw(&mut self, dcf: &mut Dcf) {
         crate::crash::with_context(("", || "Game draw"), || {
             let mut parameters = self.view_settings.clone();
-            let view::Camera::Free { position, .. } = &mut parameters.camera;
-            *position = self.world.camera.pos;
             self.control.tweak_view_parameters(&mut parameters);
             self.view
                 .draw(dcf, &self.world, &self.resources, &parameters);

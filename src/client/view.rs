@@ -13,6 +13,12 @@ pub struct View {
     animation_start: Option<std::time::Instant>,
 }
 
+impl From<&crate::world::YawPitch> for crate::gui::Quat {
+    fn from(value: &crate::world::YawPitch) -> Self {
+        crate::gui::Quat::from_euler(glam::EulerRot::XYZ, 0.0, value.pitch, value.yaw)
+    }
+}
+
 /// Possible configurations for camera anchor and view angle.
 #[derive(Debug, Clone)]
 pub enum Camera {
@@ -23,15 +29,19 @@ pub enum Camera {
         /// Rotation from world coordinate frame to camera frame of reference.
         rotation: crate::gui::Quat,
     },
+
+    /// A camera that follows player position and view direction.
+    PlayerCharacter,
 }
 
 impl Camera {
     /// Determine position and rotation of the camera in world coordinate frame.
     ///
     /// Rotation is specified from world coordinate frame to camera frame of reference.
-    fn resolve(&self, _world: &World) -> (crate::gui::Vec3, crate::gui::Quat) {
+    fn resolve(&self, world: &World) -> (crate::gui::Vec3, crate::gui::Quat) {
         match self {
             Camera::Free { position, rotation } => (*position, *rotation),
+            Camera::PlayerCharacter => (world.player.eye(), (&world.player.rotation).into()),
         }
     }
 }

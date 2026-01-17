@@ -32,6 +32,7 @@
 //! jerkiness or input lag.
 
 pub mod array3;
+pub mod character;
 pub mod vec_iter;
 
 use std::time::Duration;
@@ -170,7 +171,7 @@ pub struct Camera {
 /// more details.
 pub struct World {
     pub levels: Vec<Level>,
-    pub camera: Camera,
+    pub player: character::Character,
 }
 
 impl World {
@@ -178,37 +179,17 @@ impl World {
     pub fn new(rsrc: &Resources) -> Self {
         Self {
             levels: vec![Level::new(rsrc)],
-            camera: Default::default(),
+            player: character::Character::new(),
         }
     }
 
     /// Process an event related to a logic tick.
     pub fn process(&mut self, event: Event, _logic: &Logic) {
         match event {
-            Event::LogicTick => (),
-            Event::PresentationTick { duration } => {
-                let dt: Float = duration.as_secs_f32();
-
-                const CONTROL_ACCELERATION: Float = 50.0;
-                const CONTROL_SPEED: Float = 5.0;
-
-                let target = Mat3::from_rotation_z(-self.camera.rotation.yaw)
-                    * self.camera.control
-                    * CONTROL_SPEED;
-
-                let dv = target - self.camera.vel;
-                let dv = dv.clamp_length_max(CONTROL_ACCELERATION * dt);
-                self.camera.vel += dv;
-
-                self.camera.pos += self.camera.vel * dt;
-                self.camera.vel *= (0.25 as Float).powf(dt);
-            }
-            Event::SetCameraRotation { rotation } => {
-                self.camera.rotation = rotation;
-            }
-            Event::MoveCamera { direction } => {
-                self.camera.control = direction;
-            }
+            Event::LogicTick => {}
+            _ => {}
         }
+
+        self.player.process(&event);
     }
 }
