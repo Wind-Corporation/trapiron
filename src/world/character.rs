@@ -68,10 +68,10 @@ impl Character {
                 self.position += self.velocity * dt;
                 self.velocity *= (0.25 as Float).powf(dt); // TODO powf is not deterministic
             }
-            Event::SetCameraRotation { rotation } => {
+            Event::SetPlayerCharacterRotation { rotation } => {
                 self.rotation = *rotation;
             }
-            Event::MoveCamera { direction } => {
+            Event::MovePlayerCharacter { direction } => {
                 self.control = *direction;
             }
             _ => {}

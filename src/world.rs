@@ -90,11 +90,19 @@ pub enum Event {
         duration: Duration,
     },
 
-    /// tmp
-    MoveCamera { direction: Vec3 },
+    /// Change movement controls of player character.
+    MovePlayerCharacter {
+        /// New movement controls for the player character.
+        ///
+        /// todo: replace with vec2 + jump input when collisions are added
+        direction: Vec3,
+    },
 
-    /// tmp
-    SetCameraRotation { rotation: YawPitch },
+    /// Change look angle of player character.
+    SetPlayerCharacterRotation {
+        /// New rotation of player character in the world coordinate frame.
+        rotation: YawPitch,
+    },
 }
 
 /// Expected number of logic ticks per simulation second.

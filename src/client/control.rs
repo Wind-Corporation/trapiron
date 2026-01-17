@@ -78,7 +78,7 @@ impl Control {
     fn toggle_noclip(&mut self, world: &crate::world::World) {
         if let Some(_) = self.noclip.take() {
             // Disable noclip
-            self.pending.push_back(Event::MoveCamera {
+            self.pending.push_back(Event::MovePlayerCharacter {
                 direction: self.keyboard_camera_move_state.clamp_length_max(1.0),
             });
             self.last_camera_rotation = world.player.rotation;
@@ -88,7 +88,7 @@ impl Control {
                 position: world.player.eye(),
                 velocity: world.player.velocity,
             });
-            self.pending.push_back(Event::MoveCamera {
+            self.pending.push_back(Event::MovePlayerCharacter {
                 direction: Vec3::ZERO,
             });
         }
@@ -152,7 +152,7 @@ impl Control {
                     };
                     self.keyboard_camera_move_state += dmove;
                     if self.noclip.is_none() {
-                        self.pending.push_back(Event::MoveCamera {
+                        self.pending.push_back(Event::MovePlayerCharacter {
                             direction: self.keyboard_camera_move_state.clamp_length_max(1.0),
                         });
                     }
@@ -193,7 +193,7 @@ impl Control {
 
                 if self.noclip.is_none() {
                     self.pending_set_camera_rotation =
-                        Some(Event::SetCameraRotation { rotation: *state });
+                        Some(Event::SetPlayerCharacterRotation { rotation: *state });
                 }
             }
         }
