@@ -28,6 +28,9 @@ pub(super) struct Context<'a> {
     /// The time moment that draw logic should use for this frame.
     pub time: std::time::Instant,
 
+    /// How long the previous frame took to render, to be used as dt for animations.
+    pub delta_time: std::time::Duration,
+
     /// The current render settings.
     ///
     /// May infrequently change during one frame render.
@@ -114,6 +117,11 @@ impl<'a, 'b> Dcf<'a, 'b> {
     /// Returns the time instant that draw logic should use.
     pub fn time(&self) -> &std::time::Instant {
         &self.ctxt.time
+    }
+
+    /// How long the previous frame took to render, to be used as dt for animations.
+    pub fn delta_time(&self) -> &std::time::Duration {
+        &self.ctxt.delta_time
     }
 
     /// Returns the size of the viewport in pixels that draw logic should use.

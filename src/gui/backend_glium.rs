@@ -37,6 +37,9 @@ pub struct Gui {
     /// See https://github.com/rust-windowing/winit/issues/4222 for a reliability issue with this
     /// flag.
     cursor_captured: bool,
+
+    /// The moment the last frame has started drawing.
+    last_frame_start: Option<std::time::Instant>,
 }
 
 pub use winit_lifecycle::run;
@@ -66,6 +69,7 @@ impl Gui {
             display,
             window,
             cursor_captured: false,
+            last_frame_start: None,
         })
     }
 }
@@ -152,11 +156,21 @@ fn process_frame(gui: &mut super::Gui, app: &mut impl super::Application) {
             _phantom: std::marker::PhantomData,
         };
 
+        let now = std::time::Instant::now();
+        let delta_time = if let Some(last) = &mut gui.backend.last_frame_start {
+            let result = now - *last;
+            *last = now;
+            result
+        } else {
+            std::time::Duration::from_secs_f32(1.0 / 60.0)
+        };
+
         let mut ctxt = super::draw::Context {
             gui,
             backend: ctxt,
             size,
-            time: std::time::Instant::now(),
+            time: now,
+            delta_time,
             settings: Default::default(),
         };
 
