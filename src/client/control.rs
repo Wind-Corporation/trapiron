@@ -12,6 +12,12 @@ use crate::{
     world::{Event, Vec3},
 };
 
+/// Noclip (unaffected by collisions) camera state, otherwise known as a free camera.
+struct Noclip {
+    position: Vec3,
+    velocity: Vec3,
+}
+
 /// Logic and state of an interpreter of GUI inputs as in-game controls.
 ///
 /// For example, converts a spacebar keystroke or a X controller button press into a jump input.
@@ -32,6 +38,9 @@ pub struct Control {
 
     /// Camera rotation according to last camera control input.
     last_camera_rotation: crate::world::YawPitch,
+
+    /// Noclip state if noclip camera is enabled, `None` otherwise.
+    noclip: Option<Noclip>,
 }
 
 impl Control {
@@ -55,9 +64,56 @@ impl Control {
     pub fn tweak_view_parameters(&mut self, params: &mut Parameters) {
         use super::view::Camera::*;
 
-        match &mut params.camera {
-            Free { rotation, .. } => *rotation = (&self.last_camera_rotation).into(),
-            PlayerCharacter => {}
+        if let Some(noclip) = &self.noclip {
+            params.camera = Free {
+                position: noclip.position,
+                rotation: (&self.last_camera_rotation).into(),
+            }
+        }
+    }
+
+    /// Enable or disable the noclip camera.
+    ///
+    /// _world_ is used to initialize noclip camera equal to character camera.s
+    fn toggle_noclip(&mut self, world: &crate::world::World) {
+        if let Some(_) = self.noclip.take() {
+            // Disable noclip
+            self.pending.push_back(Event::MoveCamera {
+                direction: self.keyboard_camera_move_state.clamp_length_max(1.0),
+            });
+            self.last_camera_rotation = world.player.rotation;
+        } else {
+            // Enable noclip
+            self.noclip = Some(Noclip {
+                position: world.player.eye(),
+                velocity: world.player.velocity,
+            });
+            self.pending.push_back(Event::MoveCamera {
+                direction: Vec3::ZERO,
+            });
+        }
+    }
+
+    /// Render control-specific UI elements and update controls state.
+    pub fn draw(&mut self, dcf: &mut crate::gui::Dcf) {
+        use crate::gui::{Float, Mat3};
+
+        if let Some(noclip) = &mut self.noclip {
+            let dt: Float = dcf.delta_time().as_secs_f32();
+
+            const CONTROL_ACCELERATION: Float = 50.0;
+            const CONTROL_SPEED: Float = 5.0;
+
+            let target = Mat3::from_rotation_z(-self.last_camera_rotation.yaw)
+                * self.keyboard_camera_move_state
+                * CONTROL_SPEED;
+
+            let dv = target - noclip.velocity;
+            let dv = dv.clamp_length_max(CONTROL_ACCELERATION * dt);
+            noclip.velocity += dv;
+
+            noclip.position += noclip.velocity * dt;
+            noclip.velocity *= (0.25 as Float).powf(dt); // TODO powf is not deterministic
         }
     }
 
@@ -65,7 +121,12 @@ impl Control {
     ///
     /// Stores resulting control [events](Event) in an internal buffer, to be picked up later during
     /// [`fetch_into`](Self::fetch_into).
-    pub fn on_input(&mut self, input: crate::gui::Input, gui: &mut crate::gui::Gui) {
+    pub fn on_input(
+        &mut self,
+        input: crate::gui::Input,
+        gui: &mut crate::gui::Gui,
+        world: &crate::world::World,
+    ) {
         use crate::gui::Input::*;
 
         match input {
@@ -87,12 +148,14 @@ impl Control {
                 {
                     let mut dmove = *dmove;
                     if key_event.state == ElementState::Released {
-                        dmove *= -1f32;
+                        dmove *= -1.0;
                     };
                     self.keyboard_camera_move_state += dmove;
-                    self.pending.push_back(Event::MoveCamera {
-                        direction: self.keyboard_camera_move_state.clamp_length_max(1f32),
-                    });
+                    if self.noclip.is_none() {
+                        self.pending.push_back(Event::MoveCamera {
+                            direction: self.keyboard_camera_move_state.clamp_length_max(1.0),
+                        });
+                    }
                 }
 
                 if let KeyEvent {
@@ -103,6 +166,16 @@ impl Control {
                 } = key_event
                 {
                     gui.set_cursor_captured(!gui.cursor_captured());
+                }
+
+                if let KeyEvent {
+                    physical_key: PhysicalKey::Code(KeyCode::KeyV),
+                    state: ElementState::Pressed,
+                    repeat: false,
+                    ..
+                } = key_event
+                {
+                    self.toggle_noclip(world);
                 }
             }
 
@@ -118,8 +191,10 @@ impl Control {
                 state.pitch += displacement.y * SENSITIVITY;
                 state.pitch = state.pitch.clamp(-PI / 2.0, crate::gui::PI / 2.0);
 
-                self.pending_set_camera_rotation =
-                    Some(Event::SetCameraRotation { rotation: *state });
+                if self.noclip.is_none() {
+                    self.pending_set_camera_rotation =
+                        Some(Event::SetCameraRotation { rotation: *state });
+                }
             }
         }
     }

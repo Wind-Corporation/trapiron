@@ -3,13 +3,13 @@
 use crate::{
     content::Resources,
     gui::{Affine3, Drawable, Float, Mat4, OpaqueColor, Vec3},
-    world::{Level, World},
+    world::{Level, World, character::Character},
 };
 
 /// Renderer of [`World`], including 3D model and HUD controlled by simulation.
 pub struct View {
     rect: crate::gui::Primitive,
-    axes: crate::gui::Primitive,
+    _debug_rsrc: crate::gui::debug::Initialization,
     animation_start: Option<std::time::Instant>,
 }
 
@@ -67,7 +67,7 @@ impl View {
 
         Self {
             rect: gui.make_primitive(vec![rect]),
-            axes: crate::gui::debug::axes(gui),
+            _debug_rsrc: crate::gui::debug::init(gui),
             animation_start: None,
         }
     }
@@ -101,11 +101,19 @@ fn remap_depth(new_min: Float, new_max: crate::gui::Float) -> Mat4 {
 
 fn draw_level(dcf: &mut crate::gui::Dcf, level: &Level, rsrc: &Resources) {
     let mut dcf = dcf.shifted(level.position);
-    let mut dcf = dcf.tfed(Affine3::from_rotation_z(level.yaw));
+    let mut dcf = dcf.tfed(Affine3::from_rotation_z(-level.yaw));
 
     for (pos, block) in level.blocks.pos_iter() {
         block.view(&rsrc).draw(&mut dcf.shifted(pos.as_vec3()));
     }
+}
+
+fn draw_character(dcf: &mut crate::gui::Dcf, character: &Character) {
+    let mut dcf = dcf.shifted(character.position);
+    let mut dcf = dcf.tfed(Affine3::from_rotation_z(-character.rotation.yaw));
+    let mut dcf = dcf.scaled(Vec3::splat(0.5));
+
+    crate::gui::debug::axes(&mut dcf);
 }
 
 impl View {
@@ -139,7 +147,7 @@ impl View {
 
         dcf.set_settings(new_settings);
 
-        self.axes.draw(dcf);
+        crate::gui::debug::axes(dcf);
 
         let blue = OpaqueColor::rgb(Vec3::new(0.0, 0.1, 0.9));
         let green = OpaqueColor::rgb(Vec3::new(0.05, 0.8, 0.1));
@@ -154,6 +162,7 @@ impl View {
         for level in &world.levels {
             draw_level(dcf, level, rsrc);
         }
+        draw_character(dcf, &world.player);
 
         // Draw 2D overlay
 

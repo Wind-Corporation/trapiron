@@ -150,13 +150,14 @@ impl Game {
 
     /// React to GUI input.
     pub fn on_input(&mut self, input: crate::gui::Input, gui: &mut crate::gui::Gui) {
-        self.control.on_input(input, gui);
+        self.control.on_input(input, gui, &self.world);
     }
 }
 
 impl Drawable for Game {
     fn draw(&mut self, dcf: &mut Dcf) {
         crate::crash::with_context(("", || "Game draw"), || {
+            self.control.draw(dcf);
             let mut parameters = self.view_settings.clone();
             self.control.tweak_view_parameters(&mut parameters);
             self.view
